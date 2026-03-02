@@ -1,0 +1,77 @@
+<div class="space-y-6 max-w-5xl mx-auto py-8 px-4">
+  <div>
+    <h1 class="text-2xl font-bold tracking-tight text-gray-900 mb-1">Notifications</h1>
+    <p class="text-sm text-gray-500">View and manage your notifications</p>
+  </div>
+
+  <app-card>
+    <app-card-header>
+      <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+        <div>
+          <app-card-title>All Notifications</app-card-title>
+          <app-card-description>Total {{ totalItems }} notifications</app-card-description>
+        </div>
+        <button (click)="handleMarkAllAsRead()" class="inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 disabled:opacity-50 border border-gray-300 bg-white text-gray-700 hover:bg-gray-50 h-10 px-4 py-2 shadow-sm">
+          <app-icon-check customClass="h-4 w-4 mr-2 text-blue-600"></app-icon-check> Mark All as Read
+        </button>
+      </div>
+    </app-card-header>
+
+    <app-card-content class="pt-6">
+      <div *ngIf="loading" class="flex justify-center items-center h-40">
+        <div class="animate-spin rounded-full h-10 w-10 border-b-2 border-primary-600"></div>
+      </div>
+
+      <div *ngIf="!loading && notifications.length === 0" class="text-center py-16 bg-gray-50/50 rounded-xl border border-dashed border-gray-200">
+        <app-icon-alert-circle customClass="mx-auto h-12 w-12 text-gray-300 mb-3"></app-icon-alert-circle>
+        <p class="text-gray-900 font-medium text-lg">You're all caught up!</p>
+        <p class="text-gray-500 text-sm mt-1">No new notifications found</p>
+      </div>
+
+      <div *ngIf="!loading && notifications.length > 0" class="space-y-4">
+        <div *ngFor="let notification of notifications" [ngClass]="['p-5 border rounded-xl transition-all duration-200 shadow-sm', !notification.isRead ? getNotificationTypeClass(notification.type) + ' border-l-4' : 'bg-white border-gray-100 hover:border-gray-200 hover:shadow-md']">
+          <div class="flex items-start gap-4">
+            <div class="flex-shrink-0 mt-0.5 text-2xl" [ngClass]="getNotificationIconStyle(notification.type)">
+               {{ getNotificationIcon(notification.type) }}
+            </div>
+            <div class="flex-1 min-w-0">
+               <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 mb-1">
+                  <h3 class="font-semibold text-gray-900 text-[16px] leading-tight">{{ notification.title }}</h3>
+                  <div class="flex items-center space-x-2 shrink-0 bg-white/60 p-1.5 rounded-lg">
+                     <button *ngIf="!notification.isRead" (click)="handleMarkAsRead(notification._id)" class="p-1.5 text-blue-600 hover:bg-blue-100 hover:text-blue-800 rounded-md transition-colors" title="Mark as read">
+                        <app-icon-check customClass="h-4 w-4"></app-icon-check>
+                     </button>
+                     <button (click)="handleDeleteNotification(notification._id)" class="p-1.5 text-gray-400 hover:bg-red-50 hover:text-red-600 rounded-md transition-colors" title="Delete">
+                        <app-icon-trash customClass="h-4 w-4"></app-icon-trash>
+                     </button>
+                  </div>
+               </div>
+               <p class="text-gray-600 text-[15px] leading-relaxed">{{ notification.message }}</p>
+               <p class="text-xs text-gray-500 mt-3 font-medium flex items-center gap-1.5">
+                  <app-icon-alert-circle customClass="h-3 w-3"></app-icon-alert-circle>
+                  {{ formatDate(notification.createdAt) }}
+               </p>
+            </div>
+          </div>
+        </div>
+
+        <div *ngIf="totalPages > 1" class="flex items-center justify-between mt-8 bg-white p-4 rounded-xl border border-gray-100 shadow-sm">
+          <div class="text-sm text-gray-500 font-medium">Page {{ page }} of {{ totalPages }}</div>
+          <div class="flex items-center space-x-2">
+            <button (click)="setPage(page - 1)" [disabled]="page === 1" class="flex items-center px-3 py-1.5 rounded-md border text-sm font-medium hover:bg-gray-50 disabled:opacity-50 transition-colors">
+              <app-icon-chevron-left customClass="h-4 w-4 mr-1"></app-icon-chevron-left> Prev
+            </button>
+            <div class="hidden sm:flex items-center space-x-1">
+              <button *ngFor="let p of getPages()" (click)="setPage(p)" class="w-8 h-8 flex items-center justify-center rounded-md border text-sm font-medium transition-colors" [ngClass]="page === p ? 'bg-primary-600 text-white border-primary-600' : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'">
+                {{ p }}
+              </button>
+            </div>
+            <button (click)="setPage(page + 1)" [disabled]="page === totalPages" class="flex items-center px-3 py-1.5 rounded-md border text-sm font-medium hover:bg-gray-50 disabled:opacity-50 transition-colors">
+              Next <app-icon-chevron-right customClass="h-4 w-4 ml-1"></app-icon-chevron-right>
+            </button>
+          </div>
+        </div>
+      </div>
+    </app-card-content>
+  </app-card>
+</div>

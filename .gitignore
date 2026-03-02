@@ -1,0 +1,46 @@
+# Node
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+package-lock.json
+
+# Env (contains secrets, DB credentials, JWT keys)
+.env
+.env.local
+.env.production
+.env.*.local
+
+# Logs
+logs/
+*.log
+
+# Build output
+dist/
+build/
+frontend/.angular/
+
+# Uploads (user-uploaded files)
+backend/uploads/*
+!backend/uploads/.gitkeep
+
+# IDE/Editor
+.vscode/
+.trae/
+.idea/
+.DS_Store
+*.swp
+*.swo
+
+# JetBrains
+/shelf/
+/workspace.xml
+/httpRequests/
+/dataSources/
+/dataSources.local.xml
+
+# Gemini
+.gemini/
+
+# OS
+Thumbs.db

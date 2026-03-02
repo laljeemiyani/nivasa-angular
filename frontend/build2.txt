@@ -1,0 +1,347 @@
+﻿[33mÔØ»[39m Building...
+[32mÔ£ö[39m Building...
+Application bundle generation failed. [12.640 seconds]
+
+node.exe : 
+[1m[31m[31mX [41;3
+1m[[41;97mERROR[41;3
+1m][0m [1mNG8001: 
+'app-card-header' is 
+not a known element:
+At line:1 char:1
++ & "C:\Program Files\
+nodejs/node.exe" "C:\U
+sers\laljee\AppData\Ro
+aming ...
++ ~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~
+~~~~~
+    + CategoryInfo    
+          : NotSpeci  
+  fied: ([1m[31m   
+ [31mX... known el    
+ement::String) []    
+, RemoteException
+    + FullyQualifiedE 
+   rrorId : NativeCo  
+  mmandError
+ 
+1. If 
+'app-card-header' is 
+an Angular component, 
+then verify that it 
+is included in the 
+'@Component.imports' 
+of this component.
+2. If 
+'app-card-header' is 
+a Web Component then 
+add 'CUSTOM_ELEMENTS_S
+CHEMA' to the 
+'@Component.schemas' 
+of this component to 
+suppress this 
+message.[0m 
+[1m[35m[plugin 
+angular-compiler][0m
+
+    src/app/pages/resi
+dent/profile/profile.c
+omponent.html:31:12:
+[37m      31 Ôöé     
+        
+[32m<app-card-header 
+class="bg-gray-50 
+border-b 
+border-gra[37m...
+         ÔòÁ          
+   [32m~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~[0m
+
+  Error occurs in the 
+template of component 
+ProfileComponent.
+
+    src/app/pages/resi
+dent/profile/profile.c
+omponent.ts:43:15:
+[37m      43 Ôöé   
+templateUrl: [32m'./p
+rofile.component.html'
+[37m,
+         ÔòÁ          
+      [32m~~~~~~~~~~~
+~~~~~~~~~~~~~~~[0m
+
+
+[31mX [41;31m[[41;9
+7mERROR[41;31m][0m 
+[1mNG8001: 
+'app-card-title' is 
+not a known element:
+1. If 
+'app-card-title' is 
+an Angular component, 
+then verify that it 
+is included in the 
+'@Component.imports' 
+of this component.
+2. If 
+'app-card-title' is a 
+Web Component then 
+add 'CUSTOM_ELEMENTS_S
+CHEMA' to the 
+'@Component.schemas' 
+of this component to 
+suppress this 
+message.[0m 
+[1m[35m[plugin 
+angular-compiler][0m
+
+    src/app/pages/resi
+dent/profile/profile.c
+omponent.html:34:18:
+[37m      34 Ôöé ... 
+         
+[32m<app-card-title 
+class="text-xl 
+text-gray-900 flex 
+ite[37m...
+         ÔòÁ          
+    [32m~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~[0m
+
+  Error occurs in the 
+template of component 
+ProfileComponent.
+
+    src/app/pages/resi
+dent/profile/profile.c
+omponent.ts:43:15:
+[37m      43 Ôöé   
+templateUrl: [32m'./p
+rofile.component.html'
+[37m,
+         ÔòÁ          
+      [32m~~~~~~~~~~~
+~~~~~~~~~~~~~~~[0m
+
+
+[31mX [41;31m[[41;9
+7mERROR[41;31m][0m 
+[1mNG8001: 'app-card-
+description' is not a 
+known element:
+1. If 'app-card-descri
+ption' is an Angular 
+component, then 
+verify that it is 
+included in the 
+'@Component.imports' 
+of this component.
+2. If 'app-card-descri
+ption' is a Web 
+Component then add 'CU
+STOM_ELEMENTS_SCHEMA' 
+to the 
+'@Component.schemas' 
+of this component to 
+suppress this 
+message.[0m 
+[1m[35m[plugin 
+angular-compiler][0m
+
+    src/app/pages/resi
+dent/profile/profile.c
+omponent.html:38:18:
+[37m      38 Ôöé     
+              [32m<ap
+p-card-description 
+class="text-gray-600 
+mt-1">[37m
+         ÔòÁ          
+         [32m~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~[0
+m
+
+  Error occurs in the 
+template of component 
+ProfileComponent.
+
+    src/app/pages/resi
+dent/profile/profile.c
+omponent.ts:43:15:
+[37m      43 Ôöé   
+templateUrl: [32m'./p
+rofile.component.html'
+[37m,
+         ÔòÁ          
+      [32m~~~~~~~~~~~
+~~~~~~~~~~~~~~~[0m
+
+
+[31mX [41;31m[[41;9
+7mERROR[41;31m][0m 
+[1mNG8001: 
+'app-card-header' is 
+not a known element:
+1. If 
+'app-card-header' is 
+an Angular component, 
+then verify that it 
+is included in the 
+'@Component.imports' 
+of this component.
+2. If 
+'app-card-header' is 
+a Web Component then 
+add 'CUSTOM_ELEMENTS_S
+CHEMA' to the 
+'@Component.schemas' 
+of this component to 
+suppress this 
+message.[0m 
+[1m[35m[plugin 
+angular-compiler][0m
+
+    src/app/pages/resi
+dent/profile/profile.c
+omponent.html:149:12:
+[37m      149 Ôöé    
+         
+[32m<app-card-header 
+class="bg-gray-50 
+border-b 
+border-gr[37m...
+          ÔòÁ         
+    [32m~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~[0m
+
+  Error occurs in the 
+template of component 
+ProfileComponent.
+
+    src/app/pages/resi
+dent/profile/profile.c
+omponent.ts:43:15:
+[37m      43 Ôöé   
+templateUrl: [32m'./p
+rofile.component.html'
+[37m,
+         ÔòÁ          
+      [32m~~~~~~~~~~~
+~~~~~~~~~~~~~~~[0m
+
+
+[31mX [41;31m[[41;9
+7mERROR[41;31m][0m 
+[1mNG8001: 
+'app-card-title' is 
+not a known element:
+1. If 
+'app-card-title' is 
+an Angular component, 
+then verify that it 
+is included in the 
+'@Component.imports' 
+of this component.
+2. If 
+'app-card-title' is a 
+Web Component then 
+add 'CUSTOM_ELEMENTS_S
+CHEMA' to the 
+'@Component.schemas' 
+of this component to 
+suppress this 
+message.[0m 
+[1m[35m[plugin 
+angular-compiler][0m
+
+    src/app/pages/resi
+dent/profile/profile.c
+omponent.html:150:14:
+[37m      150 Ôöé 
+...          
+[32m<app-card-title 
+class="text-xl 
+text-gray-900 flex 
+it[37m...
+          ÔòÁ         
+     [32m~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~[0m
+
+  Error occurs in the 
+template of component 
+ProfileComponent.
+
+    src/app/pages/resi
+dent/profile/profile.c
+omponent.ts:43:15:
+[37m      43 Ôöé   
+templateUrl: [32m'./p
+rofile.component.html'
+[37m,
+         ÔòÁ          
+      [32m~~~~~~~~~~~
+~~~~~~~~~~~~~~~[0m
+
+
+[31mX [41;31m[[41;9
+7mERROR[41;31m][0m 
+[1mNG8001: 'app-card-
+description' is not a 
+known element:
+1. If 'app-card-descri
+ption' is an Angular 
+component, then 
+verify that it is 
+included in the 
+'@Component.imports' 
+of this component.
+2. If 'app-card-descri
+ption' is a Web 
+Component then add 'CU
+STOM_ELEMENTS_SCHEMA' 
+to the 
+'@Component.schemas' 
+of this component to 
+suppress this 
+message.[0m 
+[1m[35m[plugin 
+angular-compiler][0m
+
+    src/app/pages/resi
+dent/profile/profile.c
+omponent.html:154:14:
+[37m      154 Ôöé 
+...          [32m<app
+-card-description 
+class="text-gray-600 
+mt-1">[37mCha...
+          ÔòÁ         
+     [32m~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~[0m
+
+  Error occurs in the 
+template of component 
+ProfileComponent.
+
+    src/app/pages/resi
+dent/profile/profile.c
+omponent.ts:43:15:
+[37m      43 Ôöé   
+templateUrl: [32m'./p
+rofile.component.html'
+[37m,
+         ÔòÁ          
+      [32m~~~~~~~~~~~
+~~~~~~~~~~~~~~~[0m
+
+[39m[22m

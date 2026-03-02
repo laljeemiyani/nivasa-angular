@@ -1,0 +1,160 @@
+<div class="min-h-screen bg-gray-50 p-4 md:p-6">
+  <div class="max-w-7xl mx-auto space-y-6">
+    <div class="mb-8 text-center">
+      <h1 class="text-3xl font-bold text-gray-900 mb-2">Vehicle Records</h1>
+      <p class="text-gray-600 text-lg">View and manage all registered vehicles</p>
+    </div>
+
+    <div class="bg-white rounded-lg shadow-sm border mb-6 p-6">
+      <form (submit)="handleSearch($event)" class="flex flex-col md:flex-row gap-4 items-center">
+        <div class="flex-1 w-full min-w-[300px] relative">
+          <app-icon-search customClass="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400"></app-icon-search>
+          <input type="text" placeholder="Search by vehicle number or owner name..." [(ngModel)]="searchQuery" name="searchQuery" class="w-full pl-10 pr-4 h-11 border border-gray-300 rounded-md focus:border-primary-500 focus:ring-1 focus:ring-primary-500" />
+        </div>
+        
+        <button type="submit" class="w-full md:w-[120px] bg-primary-600 hover:bg-primary-700 h-11 flex items-center justify-center rounded-lg text-white font-semibold transition-colors">
+          <app-icon-search customClass="h-4 w-4 mr-2 text-white"></app-icon-search> Search
+        </button>
+
+        <div class="w-full md:w-[150px] flex-shrink-0">
+          <select [(ngModel)]="vehicleTypeFilter" (ngModelChange)="onFilterChange()" name="type" class="w-full h-11 border border-gray-300 rounded-md px-3 bg-white focus:border-primary-500 focus:ring-1 focus:ring-primary-500">
+            <option value="">All Types</option>
+            <option value="Car">Car</option><option value="Bike">Bike</option>
+            <option value="EV">EV</option><option value="Truck">Truck</option><option value="Bus">Bus</option>
+          </select>
+        </div>
+
+        <div class="w-full md:w-[120px] flex-shrink-0">
+          <select [(ngModel)]="statusFilter" (ngModelChange)="onFilterChange()" name="status" class="w-full h-11 border border-gray-300 rounded-md px-3 bg-white focus:border-primary-500 focus:ring-1 focus:ring-primary-500 capitalize">
+            <option value="">All Status</option>
+            <option value="pending">Pending</option><option value="approved">Approved</option><option value="rejected">Rejected</option>
+          </select>
+        </div>
+      </form>
+    </div>
+
+    <div class="bg-white rounded-lg shadow-sm border overflow-hidden">
+      <div *ngIf="loading" class="p-8 text-center flex flex-col items-center">
+        <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600 mb-4"></div>
+        <span class="text-gray-500">Loading vehicles...</span>
+      </div>
+
+      <div *ngIf="!loading && vehicles.length === 0" class="p-8 text-center">
+        <div class="text-gray-400 mb-2 flex justify-center"><app-icon-alert-circle customClass="h-12 w-12"></app-icon-alert-circle></div>
+        <p class="text-gray-600">No vehicles found</p>
+      </div>
+
+      <ng-container *ngIf="!loading && vehicles.length > 0">
+        <div class="overflow-x-auto">
+          <table class="w-full text-left">
+            <thead class="bg-gray-50 border-b border-gray-200">
+              <tr>
+                <th class="px-6 py-4 text-xs font-semibold text-gray-600 uppercase tracking-wider">Owner Name</th>
+                <th class="px-6 py-4 text-xs font-semibold text-gray-600 uppercase tracking-wider">Type</th>
+                <th class="px-6 py-4 text-xs font-semibold text-gray-600 uppercase tracking-wider">Make</th>
+                <th class="px-6 py-4 text-xs font-semibold text-gray-600 uppercase tracking-wider">Model</th>
+                <th class="px-6 py-4 text-xs font-semibold text-gray-600 uppercase tracking-wider">License Plate</th>
+                <th class="px-6 py-4 text-xs font-semibold text-gray-600 uppercase tracking-wider">Status</th>
+                <th class="px-6 py-4 text-xs font-semibold text-gray-600 uppercase tracking-wider">Actions</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-gray-200">
+              <tr *ngFor="let vehicle of vehicles; let i = index" [ngClass]="i % 2 === 0 ? 'bg-white' : 'bg-gray-50'" class="hover:bg-gray-100 transition-colors">
+                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{{ vehicle.userId?.fullName || 'Unknown' }}</td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">{{ vehicle.vehicleType }}</td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">{{ vehicle.vehicleName }}</td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">{{ vehicle.vehicleModel || 'N/A' }}</td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm font-mono text-gray-900"><span class="bg-gray-100 px-2 py-1 rounded">{{ vehicle.vehicleNumber }}</span></td>
+                <td class="px-6 py-4 whitespace-nowrap">
+                  <app-badge [variant]="vehicle.status === 'approved' ? 'success' : vehicle.status === 'rejected' ? 'error' : 'warning'">
+                    {{ vehicle.status === 'approved' ? 'Active' : vehicle.status === 'rejected' ? 'Inactive' : 'Pending' }}
+                  </app-badge>
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm">
+                  <div class="flex items-center space-x-2">
+                    <button class="p-1.5 text-gray-400 hover:text-blue-600 transition-colors rounded-md hover:bg-blue-50" title="View Details" (click)="openVehicleModal(vehicle)">
+                      <app-icon-eye customClass="w-4 h-4"></app-icon-eye>
+                    </button>
+                    <ng-container *ngIf="vehicle.status === 'pending'">
+                      <button class="p-1.5 text-gray-400 hover:text-green-600 transition-colors rounded-md hover:bg-green-50" title="Approve" (click)="openStatusDialog(vehicle, 'approve')">
+                        <app-icon-check customClass="w-4 h-4"></app-icon-check>
+                      </button>
+                      <button class="p-1.5 text-gray-400 hover:text-red-600 transition-colors rounded-md hover:bg-red-50" title="Reject" (click)="openStatusDialog(vehicle, 'reject')">
+                        <app-icon-x customClass="w-4 h-4"></app-icon-x>
+                      </button>
+                    </ng-container>
+                  </div>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div *ngIf="totalPages > 1" class="bg-white px-6 py-4 border-t border-gray-200">
+          <div class="flex items-center justify-between">
+            <div class="text-sm text-gray-600">Showing page {{ page }} of {{ totalPages }}</div>
+            <div class="flex space-x-1 items-center">
+              <button class="px-3 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 flex items-center" (click)="setPage(page - 1)" [disabled]="page === 1">
+                <app-icon-chevron-left customClass="w-4 h-4 mr-1"></app-icon-chevron-left> Prev
+              </button>
+              <button *ngFor="let p of getPages()" class="px-3 py-2 text-sm font-medium rounded-md border" [ngClass]="page === p ? 'bg-primary-600 text-white border-primary-600' : 'text-gray-700 bg-white border-gray-300 hover:bg-gray-50'" (click)="setPage(p)">
+                {{ p }}
+              </button>
+              <button class="px-3 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 flex items-center" (click)="setPage(page + 1)" [disabled]="page === totalPages">
+                Next <app-icon-chevron-right customClass="w-4 h-4 ml-1"></app-icon-chevron-right>
+              </button>
+            </div>
+          </div>
+        </div>
+      </ng-container>
+    </div>
+  </div>
+
+  <app-modal *ngIf="modalOpen" [isOpen]="modalOpen" (close)="closeModal()" size="md">
+    <app-modal-header>
+      <app-modal-title>Vehicle Details</app-modal-title>
+      <button class="absolute top-4 right-4 text-gray-400 hover:text-gray-600" (click)="closeModal()"><app-icon-x customClass="h-5 w-5"></app-icon-x></button>
+    </app-modal-header>
+    <app-modal-body>
+      <div *ngIf="selectedVehicle" class="space-y-4">
+        <div class="grid grid-cols-2 gap-4">
+          <div><label class="block text-sm font-medium text-gray-700 mb-1">Vehicle No</label>
+            <p class="text-sm text-gray-900 font-mono bg-gray-50 px-3 py-2 rounded border">{{ selectedVehicle.vehicleNumber }}</p>
+          </div>
+          <div><label class="block text-sm font-medium text-gray-700 mb-1">Vehicle Name</label><p class="text-sm text-gray-900 mt-2">{{ selectedVehicle.vehicleName }}</p></div>
+          <div><label class="block text-sm font-medium text-gray-700 mb-1">Vehicle Type</label><p class="text-sm text-gray-900">{{ selectedVehicle.vehicleType }}</p></div>
+          <div><label class="block text-sm font-medium text-gray-700 mb-1">Model</label><p class="text-sm text-gray-900">{{ selectedVehicle.vehicleModel || 'N/A' }}</p></div>
+          <div><label class="block text-sm font-medium text-gray-700 mb-1">Color</label><p class="text-sm text-gray-900">{{ selectedVehicle.vehicleColor || 'N/A' }}</p></div>
+          <div><label class="block text-sm font-medium text-gray-700 mb-1">Reg Date</label><p class="text-sm text-gray-900">{{ formatDate(selectedVehicle.registrationDate) }}</p></div>
+          <div><label class="block text-sm font-medium text-gray-700 mb-1">Owner Name</label><p class="text-sm text-gray-900">{{ selectedVehicle.userId?.fullName || 'Unknown' }}</p></div>
+          <div><label class="block text-sm font-medium text-gray-700 mb-1">Owner Email</label><p class="text-sm text-gray-900 break-all">{{ selectedVehicle.userId?.email || 'Unknown' }}</p></div>
+          <div><label class="block text-sm font-medium text-gray-700 mb-1">Flat</label><p class="text-sm text-gray-900">{{ selectedVehicle.userId ? selectedVehicle.userId.wing + '-' + selectedVehicle.userId.flatNumber : 'N/A' }}</p></div>
+          <div><label class="block text-sm font-medium text-gray-700 mb-1">Status</label><app-badge [variant]="selectedVehicle.status === 'approved' ? 'success' : selectedVehicle.status === 'rejected' ? 'error' : 'warning'" class="capitalize">{{ selectedVehicle.status || 'pending' }}</app-badge></div>
+        </div>
+      </div>
+    </app-modal-body>
+    <app-modal-footer>
+      <button class="px-4 py-2 border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50" (click)="closeModal()">Close</button>
+    </app-modal-footer>
+  </app-modal>
+
+  <app-modal *ngIf="statusDialogOpen" [isOpen]="statusDialogOpen" (close)="closeStatusDialog()" size="md">
+    <app-modal-header>
+      <app-modal-title>{{ statusAction === 'approve' ? 'Approve Vehicle' : 'Reject Vehicle' }}</app-modal-title>
+      <button class="absolute top-4 right-4 text-gray-400 hover:text-gray-600" (click)="closeStatusDialog()"><app-icon-x customClass="h-5 w-5"></app-icon-x></button>
+    </app-modal-header>
+    <app-modal-body>
+      <div class="p-4 rounded-lg flex gap-3 text-sm" [ngClass]="statusAction === 'approve' ? 'bg-green-50 text-green-800 border bg-green-200' : 'bg-red-50 text-red-800 border border-red-200'">
+        <app-icon-alert-circle class="mt-0.5 flex-shrink-0" [customClass]="'w-5 h-5 ' + (statusAction === 'approve' ? 'text-green-600' : 'text-red-600')"></app-icon-alert-circle>
+        <p>{{ statusAction === 'approve' ? 'Are you sure you want to approve this vehicle? This allows the resident to use it within the premises.' : 'Are you sure you want to reject this vehicle? This prevents the resident from using it within the premises.' }}</p>
+      </div>
+    </app-modal-body>
+    <app-modal-footer>
+       <button class="px-4 py-2 text-white rounded-md flex items-center gap-2 disabled:opacity-50" [ngClass]="statusAction === 'approve' ? 'bg-green-600 hover:bg-green-700' : 'bg-red-600 hover:bg-red-700'" [disabled]="processingStatus" (click)="handleUpdateStatus()">
+        <div *ngIf="processingStatus" class="animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full"></div>
+        {{ processingStatus ? 'Processing...' : statusAction === 'approve' ? 'Approve' : 'Reject' }}
+      </button>
+      <button class="px-4 py-2 border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50" (click)="closeStatusDialog()" [disabled]="processingStatus">Cancel</button>
+    </app-modal-footer>
+  </app-modal>
+</div>

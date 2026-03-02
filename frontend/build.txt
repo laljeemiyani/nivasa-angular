@@ -1,0 +1,275 @@
+﻿[33mÔØ»[39m Building...
+[32mÔ£ö[39m Building...
+Application bundle generation failed. [13.875 seconds]
+
+node.exe : 
+[1m[31m[31mX [41;3
+1m[[41;97mERROR[41;3
+1m][0m [1mNG9: 
+Property 
+'familyMembers' does 
+not exist on type 'Adm
+inFamilyMembersCompone
+nt'.[0m 
+[1m[35m[plugin 
+angular-compiler][0m
+At line:1 char:1
++ & "C:\Program Files\
+nodejs/node.exe" "C:\U
+sers\laljee\AppData\Ro
+aming ...
++ ~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~
+~~~~~
+    + CategoryInfo    
+          : NotSpeci  
+  fied: ([1m[31m   
+ [31mX...r-compile    
+r][0m:String) []    
+, RemoteException
+    + FullyQualifiedE 
+   rrorId : NativeCo  
+  mmandError
+ 
+
+    src/app/pages/admi
+n/family-members/famil
+y-members.component.ht
+ml:30:30:
+[37m      30 Ôöé ... 
+<div *ngIf="!loading 
+&& [32mfamilyMembers
+[37m.length === 0" 
+class="fle...
+         ÔòÁ          
+                   
+[32m~~~~~~~~~~~~~[0m
+
+  Error occurs in the 
+template of component 
+AdminFamilyMembersComp
+onent.
+
+    src/app/pages/admi
+n/family-members/famil
+y-members.component.ts
+:34:15:
+[37m      34 Ôöé   
+templateUrl: [32m'./f
+amily-members.componen
+t.html'[37m,
+         ÔòÁ          
+      [32m~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~
+[0m
+
+
+[31mX [41;31m[[41;9
+7mERROR[41;31m][0m 
+[1mNG9: Property 
+'familyMembers' does 
+not exist on type 'Adm
+inFamilyMembersCompone
+nt'.[0m 
+[1m[35m[plugin 
+angular-compiler][0m
+
+    src/app/pages/admi
+n/family-members/famil
+y-members.component.ht
+ml:36:30:
+[37m      36 Ôöé ... 
+<div *ngIf="!loading 
+&& [32mfamilyMembers
+[37m.length > 0" 
+class="overf...
+         ÔòÁ          
+                   
+[32m~~~~~~~~~~~~~[0m
+
+  Error occurs in the 
+template of component 
+AdminFamilyMembersComp
+onent.
+
+    src/app/pages/admi
+n/family-members/famil
+y-members.component.ts
+:34:15:
+[37m      34 Ôöé   
+templateUrl: [32m'./f
+amily-members.componen
+t.html'[37m,
+         ÔòÁ          
+      [32m~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~
+[0m
+
+
+[31mX [41;31m[[41;9
+7mERROR[41;31m][0m 
+[1mNG9: Property 
+'familyMembers' does 
+not exist on type 'Adm
+inFamilyMembersCompone
+nt'.[0m 
+[1m[35m[plugin 
+angular-compiler][0m
+
+    src/app/pages/admi
+n/family-members/famil
+y-members.component.ht
+ml:48:38:
+[37m      48 Ôöé 
+...tr *ngFor="let 
+member of [32mfamilyM
+embers[37m" class="ho
+ver:bg-gray-50...
+         ÔòÁ          
+                   
+[32m~~~~~~~~~~~~~[0m
+
+  Error occurs in the 
+template of component 
+AdminFamilyMembersComp
+onent.
+
+    src/app/pages/admi
+n/family-members/famil
+y-members.component.ts
+:34:15:
+[37m      34 Ôöé   
+templateUrl: [32m'./f
+amily-members.componen
+t.html'[37m,
+         ÔòÁ          
+      [32m~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~
+[0m
+
+
+[31mX [41;31m[[41;9
+7mERROR[41;31m][0m 
+[1mNG9: Property 
+'Math' does not exist 
+on type 'AdminFamilyMe
+mbersComponent'.[0m 
+[1m[35m[plugin 
+angular-compiler][0m
+
+    src/app/pages/admi
+n/family-members/famil
+y-members.component.ht
+ml:94:120:
+[37m      94 Ôöé ... 
+<span class="font-medi
+um">{{ [32mMath[37m.
+min(currentPage * 10, 
+totalI...
+         ÔòÁ          
+                      
+  [32m~~~~[0m
+
+  Error occurs in the 
+template of component 
+AdminFamilyMembersComp
+onent.
+
+    src/app/pages/admi
+n/family-members/famil
+y-members.component.ts
+:34:15:
+[37m      34 Ôöé   
+templateUrl: [32m'./f
+amily-members.componen
+t.html'[37m,
+         ÔòÁ          
+      [32m~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~
+[0m
+
+
+[31mX [41;31m[[41;9
+7mERROR[41;31m][0m 
+[1mTS2339: Property 
+'familyMembers' does 
+not exist on type 'Adm
+inFamilyMembersCompone
+nt'.[0m 
+[1m[35m[plugin 
+angular-compiler][0m
+
+    src/app/pages/admi
+n/family-members/famil
+y-members.component.ts
+:62:15:
+[37m      62 Ôöé     
+      this.[32mfamily
+Members[37m = 
+resData.familyMembers 
+|| [];
+         ÔòÁ          
+      
+[32m~~~~~~~~~~~~~[0m
+
+
+[31mX [41;31m[[41;9
+7mERROR[41;31m][0m 
+[1mTS2339: Property 
+'familyMembers' does 
+not exist on type 'Adm
+inFamilyMembersCompone
+nt'.[0m 
+[1m[35m[plugin 
+angular-compiler][0m
+
+    src/app/pages/admi
+n/family-members/famil
+y-members.component.ts
+:70:15:
+[37m      70 Ôöé     
+      this.[32mfamily
+Members[37m = [];
+         ÔòÁ          
+      
+[32m~~~~~~~~~~~~~[0m
+
+
+[31mX [41;31m[[41;9
+7mERROR[41;31m][0m 
+[1mNG9: Property 
+'profileTabs' does 
+not exist on type 'Pro
+fileComponent'.[0m 
+[1m[35m[plugin 
+angular-compiler][0m
+
+    src/app/pages/resi
+dent/profile/profile.c
+omponent.html:25:47:
+[37m      25 Ôöé     
+  <app-tabs defaultVal
+ue="profile" [tabs]="
+[32mprofileTabs[37m">
+         ÔòÁ          
+                      
+                
+[32m~~~~~~~~~~~[0m
+
+  Error occurs in the 
+template of component 
+ProfileComponent.
+
+    src/app/pages/resi
+dent/profile/profile.c
+omponent.ts:49:15:
+[37m      49 Ôöé   
+templateUrl: [32m'./p
+rofile.component.html'
+[37m,
+         ÔòÁ          
+      [32m~~~~~~~~~~~
+~~~~~~~~~~~~~~~[0m
+
+[39m[22m

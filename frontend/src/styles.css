@@ -1,0 +1,8 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Additional styles to match App.css / index.css from React */
+body {
+  @apply bg-background text-text-primary antialiased font-sans flex min-h-screen flex-col;
+}

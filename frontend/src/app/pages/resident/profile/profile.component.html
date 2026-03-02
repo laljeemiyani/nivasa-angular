@@ -1,0 +1,203 @@
+<div class="min-h-screen bg-gray-50 p-4 md:p-6">
+  <div class="max-w-5xl mx-auto space-y-6">
+    <div *ngIf="loading" class="flex flex-col justify-center items-center h-96 space-y-4">
+      <div class="w-12 h-12 border-4 border-gray-200 border-t-primary-600 rounded-full animate-spin"></div>
+      <p class="text-gray-600">Loading your profile...</p>
+    </div>
+
+    <ng-container *ngIf="!loading">
+      <!-- Header -->
+      <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+        <div class="flex flex-col md:flex-row items-start md:items-center justify-between">
+          <div>
+            <h1 class="text-3xl font-bold text-gray-900 mb-2">Profile Management</h1>
+            <p class="text-gray-600">Manage your personal information and account settings</p>
+          </div>
+          <div class="mt-4 md:mt-0 flex items-center space-x-4">
+            <div class="w-16 h-16 rounded-full bg-gray-100 flex items-center justify-center border-2 border-gray-200 overflow-hidden">
+              <img *ngIf="profilePhoto" [src]="profilePhoto.preview" alt="Profile" class="w-full h-full object-cover"/>
+              <app-icon-user *ngIf="!profilePhoto" customClass="w-8 h-8 text-gray-400"></app-icon-user>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <app-tabs defaultValue="profile" [tabs]="profileTabs">
+        
+
+        <!-- Profile Tab -->
+        <app-tabs-content value="profile" class="mt-6">
+          <app-card class="border border-gray-200 shadow-sm">
+            <app-card-header class="bg-gray-50 border-b border-gray-200">
+              <div class="flex items-center justify-between">
+                <div>
+                  <app-card-title class="text-xl text-gray-900 flex items-center space-x-2">
+                    <app-icon-user customClass="w-5 h-5 text-primary-600"></app-icon-user>
+                    <span>Personal Information</span>
+                  </app-card-title>
+                  <app-card-description class="text-gray-600 mt-1">
+                    View and update your profile details
+                  </app-card-description>
+                </div>
+                <button (click)="isEditing = !isEditing" class="flex justify-center items-center px-4 py-2 bg-gray-100 hover:bg-gray-200 rounded-md text-sm font-medium border border-gray-200">
+                  <app-icon-eye *ngIf="isEditing" customClass="h-4 w-4 mr-2"></app-icon-eye>
+                  <app-icon-user *ngIf="!isEditing" customClass="h-4 w-4 mr-2"></app-icon-user>
+                  {{ isEditing ? 'View Mode' : 'Edit Profile' }}
+                </button>
+              </div>
+            </app-card-header>
+            <app-card-content class="p-6">
+              <form (ngSubmit)="handleProfileUpdate()" class="space-y-6">
+                <!-- Profile Photo Section -->
+                <div class="flex flex-col items-center space-y-4 p-6 bg-gray-50 rounded-lg border border-gray-200">
+                  <div class="relative group">
+                    <div class="w-32 h-32 rounded-full overflow-hidden bg-white flex items-center justify-center border-4 border-gray-200 shadow-sm">
+                      <img *ngIf="profilePhoto" [src]="profilePhoto.preview" class="w-full h-full object-cover" />
+                      <app-icon-user *ngIf="!profilePhoto" customClass="w-16 h-16 text-gray-400"></app-icon-user>
+                    </div>
+                    <div *ngIf="isEditing" class="absolute inset-0 bg-black/40 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer">
+                      <app-icon-camera customClass="w-6 h-6 text-white"></app-icon-camera>
+                    </div>
+                  </div>
+                  <div *ngIf="isEditing" class="w-full max-w-xs cursor-pointer">
+                    <input type="file" (change)="handleProfilePhotoUpload($any($event.target).files)" accept="image/*" class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-primary-50 file:text-primary-700 hover:file:bg-primary-100 cursor-pointer" />
+                    <div *ngIf="uploadingPhoto" class="flex items-center justify-center mt-2 text-primary-600">
+                      <div class="animate-spin rounded-full h-4 w-4 border-b-2 border-primary-600 mr-2"></div>
+                      <span class="text-sm">Uploading...</span>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Form Fields -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <!-- Full Name -->
+                  <div class="space-y-2">
+                    <label class="text-sm font-medium text-gray-700 flex items-center space-x-2"><span>Full Name</span>*</label>
+                    <input type="text" [value]="formData.fullName" (input)="handleInputChange($event, 'fullName')" [disabled]="!isEditing" required
+                           class="w-full h-10 px-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-primary-500" [ngClass]="isEditing ? 'bg-white' : 'bg-gray-100'" />
+                  </div>
+                  <!-- Phone Number -->
+                  <div class="space-y-2">
+                    <label class="text-sm font-medium text-gray-700 flex items-center space-x-2"><span>Phone Number</span>*</label>
+                    <input type="tel" [value]="formData.phoneNumber" (input)="handleInputChange($event, 'phoneNumber')" [disabled]="!isEditing" required maxlength="10"
+                           class="w-full h-10 px-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-primary-500" [ngClass]="isEditing ? 'bg-white' : 'bg-gray-100'" />
+                    <p *ngIf="errors['phoneNumber']" class="text-red-500 text-sm flex items-center"><app-icon-alert-circle customClass="w-4 h-4 mr-1"></app-icon-alert-circle>{{errors['phoneNumber']}}</p>
+                  </div>
+                  <!-- Age -->
+                  <div class="space-y-2">
+                    <label class="text-sm font-medium text-gray-700 flex items-center space-x-2"><span>Age</span></label>
+                    <input type="text" [value]="formData.age" (input)="handleInputChange($event, 'age')" [disabled]="!isEditing" maxlength="3"
+                           class="w-full h-10 px-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-primary-500" [ngClass]="isEditing ? 'bg-white' : 'bg-gray-100'" />
+                    <p *ngIf="errors['age']" class="text-red-500 text-sm flex items-center"><app-icon-alert-circle customClass="w-4 h-4 mr-1"></app-icon-alert-circle>{{errors['age']}}</p>
+                  </div>
+                  <!-- Gender -->
+                  <div class="space-y-2">
+                    <label class="text-sm font-medium text-gray-700 flex items-center space-x-2"><span>Gender</span></label>
+                    <select [value]="formData.gender" (change)="handleSelectChange($event, 'gender')" [disabled]="!isEditing"
+                            class="w-full h-10 px-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-primary-500" [ngClass]="isEditing ? 'bg-white' : 'bg-gray-100'">
+                      <option value="">Select gender</option>
+                      <option value="Male">Male</option>
+                      <option value="Female">Female</option>
+                      <option value="Other">Other</option>
+                    </select>
+                  </div>
+                  <!-- Wing -->
+                  <div class="space-y-2">
+                    <label class="text-sm font-medium text-gray-700 flex items-center space-x-2"><span>Wing</span></label>
+                    <select [value]="formData.wing" (change)="handleSelectChange($event, 'wing')" [disabled]="!isEditing"
+                            class="w-full h-10 px-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-primary-500" [ngClass]="isEditing ? 'bg-white' : 'bg-gray-100'">
+                      <option value="">Select wing</option>
+                      <option value="A">Wing A</option><option value="B">Wing B</option>
+                      <option value="C">Wing C</option><option value="D">Wing D</option>
+                      <option value="E">Wing E</option><option value="F">Wing F</option>
+                    </select>
+                  </div>
+                  <!-- Flat Number -->
+                  <div class="space-y-2">
+                    <label class="text-sm font-medium text-gray-700 flex items-center space-x-2"><span>Flat Number</span></label>
+                    <input type="text" [value]="formData.flatNumber" (input)="handleInputChange($event, 'flatNumber')" [disabled]="!isEditing" maxlength="4" placeholder="e.g., 101, 1404"
+                           class="w-full h-10 px-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-primary-500" [ngClass]="isEditing ? 'bg-white' : 'bg-gray-100'" />
+                    <p *ngIf="errors['flatNumber']" class="text-red-500 text-sm flex items-center"><app-icon-alert-circle customClass="w-4 h-4 mr-1"></app-icon-alert-circle>{{errors['flatNumber']}}</p>
+                  </div>
+                  <!-- Resident Type -->
+                  <div class="space-y-2">
+                    <label class="text-sm font-medium text-gray-700 flex items-center space-x-2"><span>Resident Type</span>*</label>
+                    <select [value]="formData.residentType" (change)="handleSelectChange($event, 'residentType')" [disabled]="!isEditing"
+                            class="w-full h-10 px-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-primary-500" [ngClass]="isEditing ? 'bg-white' : 'bg-gray-100'">
+                      <option value="Owner">Owner</option>
+                      <option value="Tenant">Tenant</option>
+                    </select>
+                  </div>
+                </div>
+
+                <!-- Footer / Save Actions -->
+                <div *ngIf="isEditing" class="flex flex-col sm:flex-row gap-3 justify-end pt-4 border-t border-gray-200">
+                  <button type="button" (click)="isEditing = false; errors = {}" class="px-6 py-2.5 rounded-2xl font-medium bg-gray-100 hover:bg-gray-200 text-gray-700 border border-gray-300">Cancel</button>
+                  <button type="button" (click)="handleProfileUpdate()" [disabled]="saving || getKeys(errors).length > 0" class="px-6 py-2.5 rounded-2xl font-medium bg-primary-600 hover:bg-primary-700 text-white flex justify-center items-center disabled:opacity-50">
+                    <div *ngIf="saving" class="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                    Save Changes
+                  </button>
+                </div>
+              </form>
+            </app-card-content>
+          </app-card>
+        </app-tabs-content>
+
+        <!-- Security Tab -->
+        <app-tabs-content value="security" class="mt-6">
+          <app-card class="border border-gray-200 shadow-sm">
+            <app-card-header class="bg-gray-50 border-b border-gray-200">
+              <app-card-title class="text-xl text-gray-900 flex items-center space-x-2">
+                <app-icon-shield customClass="w-5 h-5 text-primary-600"></app-icon-shield>
+                <span>Security Settings</span>
+              </app-card-title>
+              <app-card-description class="text-gray-600 mt-1">Change your password</app-card-description>
+            </app-card-header>
+            <app-card-content class="p-6">
+              <form (ngSubmit)="handlePasswordUpdate()" class="space-y-4">
+                <div class="space-y-2">
+                  <label class="text-sm font-medium text-gray-700">Current Password *</label>
+                  <div class="relative">
+                    <input [type]="showPasswords.current ? 'text' : 'password'" [(ngModel)]="passwordData.currentPassword" name="currentPassword" required class="w-full h-10 px-3 pr-10 border border-gray-300 rounded-md focus:ring-2 focus:ring-primary-500" placeholder="Enter current password" />
+                    <button type="button" class="absolute right-1 top-1/2 -translate-y-1/2 h-8 w-8 p-0 hover:bg-gray-100 rounded-full flex items-center justify-center" (click)="togglePasswordVisibility('current')">
+                      <app-icon-eye-off *ngIf="showPasswords.current" customClass="h-4 w-4 text-gray-500"></app-icon-eye-off>
+                      <app-icon-eye *ngIf="!showPasswords.current" customClass="h-4 w-4 text-gray-500"></app-icon-eye>
+                    </button>
+                  </div>
+                </div>
+                <!-- Simliar for New and Confirm Password... To keep concise, simplified copy paste -->
+                <div class="space-y-2">
+                  <label class="text-sm font-medium text-gray-700">New Password *</label>
+                  <div class="relative">
+                    <input [type]="showPasswords.new ? 'text' : 'password'" [(ngModel)]="passwordData.newPassword" name="newPassword" required minlength="6" class="w-full h-10 px-3 pr-10 border border-gray-300 rounded-md focus:ring-2 focus:ring-primary-500" placeholder="Enter new password" />
+                    <button type="button" class="absolute right-1 top-1/2 -translate-y-1/2 h-8 w-8 p-0 hover:bg-gray-100 rounded-full flex items-center justify-center" (click)="togglePasswordVisibility('new')">
+                      <app-icon-eye-off *ngIf="showPasswords.new" customClass="h-4 w-4 text-gray-500"></app-icon-eye-off>
+                      <app-icon-eye *ngIf="!showPasswords.new" customClass="h-4 w-4 text-gray-500"></app-icon-eye>
+                    </button>
+                  </div>
+                </div>
+                <div class="space-y-2">
+                  <label class="text-sm font-medium text-gray-700">Confirm Password *</label>
+                  <div class="relative">
+                    <input [type]="showPasswords.confirm ? 'text' : 'password'" [(ngModel)]="passwordData.confirmPassword" name="confirmPassword" required minlength="6" class="w-full h-10 px-3 pr-10 border border-gray-300 rounded-md focus:ring-2 focus:ring-primary-500" placeholder="Confirm new password" />
+                    <button type="button" class="absolute right-1 top-1/2 -translate-y-1/2 h-8 w-8 p-0 hover:bg-gray-100 rounded-full flex items-center justify-center" (click)="togglePasswordVisibility('confirm')">
+                      <app-icon-eye-off *ngIf="showPasswords.confirm" customClass="h-4 w-4 text-gray-500"></app-icon-eye-off>
+                      <app-icon-eye *ngIf="!showPasswords.confirm" customClass="h-4 w-4 text-gray-500"></app-icon-eye>
+                    </button>
+                  </div>
+                </div>
+
+                <div class="flex justify-end pt-4 border-t border-gray-200">
+                  <button type="submit" [disabled]="changingPassword" class="px-6 py-2.5 rounded-2xl font-medium bg-primary-600 hover:bg-primary-700 text-white flex justify-center items-center disabled:opacity-50">
+                    <div *ngIf="changingPassword" class="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                    Change Password
+                  </button>
+                </div>
+              </form>
+            </app-card-content>
+          </app-card>
+        </app-tabs-content>
+      </app-tabs>
+    </ng-container>
+  </div>
+</div>

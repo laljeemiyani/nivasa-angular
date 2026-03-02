@@ -1,0 +1,119 @@
+<div class="space-y-6 max-w-5xl mx-auto py-8 px-4">
+  <div>
+    <h1 class="text-2xl font-bold tracking-tight text-gray-900 mb-1">Notifications</h1>
+    <p class="text-sm text-gray-500">Manage and view all system notifications</p>
+  </div>
+
+  <app-card>
+    <app-card-header>
+      <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+        <div>
+          <app-card-title>All Notifications</app-card-title>
+          <app-card-description>Total {{ totalItems }} notifications</app-card-description>
+        </div>
+        <button (click)="handleMarkAllAsRead()" class="inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 disabled:opacity-50 hover:bg-primary-700 bg-primary-600 text-white h-10 px-4 py-2">
+          <app-icon-check customClass="h-4 w-4 mr-2"></app-icon-check> Mark All as Read
+        </button>
+      </div>
+    </app-card-header>
+
+    <app-card-content>
+      <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6 p-4 bg-gray-50 rounded-lg">
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">Status</label>
+          <select [(ngModel)]="filter.isRead" (ngModelChange)="onFilterChange()" class="w-full h-10 border border-gray-300 rounded-md px-3 bg-white focus:ring-1 focus:ring-primary-500 shadow-sm">
+            <option value="">All</option>
+            <option value="false">Unread</option>
+            <option value="true">Read</option>
+          </select>
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">Type</label>
+          <select [(ngModel)]="filter.type" (ngModelChange)="onFilterChange()" class="w-full h-10 border border-gray-300 rounded-md px-3 bg-white focus:ring-1 focus:ring-primary-500 shadow-sm">
+            <option value="">All Types</option>
+            <option value="info">Info</option>
+            <option value="success">Success</option>
+            <option value="warning">Warning</option>
+            <option value="error">Error</option>
+          </select>
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">Related Model</label>
+          <select [(ngModel)]="filter.relatedModel" (ngModelChange)="onFilterChange()" class="w-full h-10 border border-gray-300 rounded-md px-3 bg-white focus:ring-1 focus:ring-primary-500 shadow-sm">
+            <option value="">All Models</option>
+            <option value="User">User</option><option value="Vehicle">Vehicle</option>
+            <option value="Complaint">Complaint</option><option value="Notice">Notice</option>
+            <option value="Payment">Payment</option><option value="Maintenance">Maintenance</option>
+          </select>
+        </div>
+        <div class="flex items-end">
+          <button (click)="clearFilters()" class="w-full px-3 py-2 h-10 bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300 text-sm font-medium transition-colors">
+            Clear Filters
+          </button>
+        </div>
+      </div>
+
+      <div *ngIf="loading" class="flex justify-center items-center h-40">
+        <div class="animate-spin rounded-full h-10 w-10 border-b-2 border-primary-600"></div>
+      </div>
+
+      <div *ngIf="!loading && notifications.length === 0" class="text-center py-12">
+        <app-icon-alert-circle customClass="mx-auto h-12 w-12 text-gray-300 mb-3"></app-icon-alert-circle>
+        <p class="text-gray-500 text-lg">No notifications found</p>
+      </div>
+
+      <div *ngIf="!loading && notifications.length > 0" class="space-y-4">
+        <div *ngFor="let notification of notifications" [ngClass]="['p-4 border rounded-lg transition-colors', !notification.isRead ? getNotificationTypeClass(notification.type) : 'bg-gray-50 border-gray-200 hover:bg-gray-100']">
+          <div class="flex items-start">
+            <div class="flex-shrink-0 mr-3 mt-1 text-xl" [ngClass]="getNotificationIconStyle(notification.type)">
+               {{ getNotificationIcon(notification.type) }}
+            </div>
+            <div class="flex-1 min-w-0">
+               <div class="flex justify-between items-start gap-4">
+                  <div class="flex-1">
+                     <h3 class="font-medium text-gray-900 text-[15px] leading-tight">{{ notification.title }}</h3>
+                     <p class="text-gray-600 mt-1 text-sm">{{ notification.message }}</p>
+                     <div class="flex flex-wrap items-center gap-4 mt-3 text-xs text-gray-500 font-medium">
+                        <span *ngIf="notification.relatedModel" class="flex items-center gap-1 bg-white/50 px-2 py-1 rounded border border-gray-200">
+                           <app-icon-user *ngIf="notification.relatedModel === 'User'" customClass="h-3 w-3"></app-icon-user>
+                           <!-- Simple fallback icon for other models -->
+                           <svg *ngIf="notification.relatedModel !== 'User'" class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"></path></svg>
+                           {{ notification.relatedModel }}
+                        </span>
+                        <span class="text-gray-400">{{ formatDate(notification.createdAt) }}</span>
+                        <span *ngIf="notification.userId?.email" class="text-gray-500 bg-gray-100 px-2 py-1 rounded">User: {{ notification.userId.email }}</span>
+                     </div>
+                  </div>
+                  <div class="flex items-center space-x-2 shrink-0 bg-white/50 p-1 rounded-md border border-gray-100 shadow-sm">
+                     <button *ngIf="!notification.isRead" (click)="handleMarkAsRead(notification._id)" class="p-1.5 text-blue-600 hover:bg-blue-100 rounded-md transition-colors" title="Mark as read">
+                        <app-icon-check customClass="h-4 w-4"></app-icon-check>
+                     </button>
+                     <button (click)="handleDeleteNotification(notification._id)" class="p-1.5 text-red-600 hover:bg-red-100 rounded-md transition-colors" title="Delete">
+                        <app-icon-trash customClass="h-4 w-4"></app-icon-trash>
+                     </button>
+                  </div>
+               </div>
+            </div>
+          </div>
+        </div>
+
+        <div *ngIf="totalPages > 1" class="flex items-center justify-between mt-6 bg-white p-4 rounded-lg border shadow-sm">
+          <div class="text-sm text-gray-500 font-medium">Page {{ page }} of {{ totalPages }}</div>
+          <div class="flex items-center space-x-2">
+            <button (click)="setPage(page - 1)" [disabled]="page === 1" class="flex items-center px-3 py-1.5 rounded-md border text-sm font-medium hover:bg-gray-50 disabled:opacity-50 transition-colors">
+              <app-icon-chevron-left customClass="h-4 w-4 mr-1"></app-icon-chevron-left> Prev
+            </button>
+            <div class="hidden sm:flex items-center space-x-1">
+              <button *ngFor="let p of getPages()" (click)="setPage(p)" class="w-8 h-8 flex items-center justify-center rounded-md border text-sm font-medium transition-colors" [ngClass]="page === p ? 'bg-primary-600 text-white border-primary-600' : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'">
+                {{ p }}
+              </button>
+            </div>
+            <button (click)="setPage(page + 1)" [disabled]="page === totalPages" class="flex items-center px-3 py-1.5 rounded-md border text-sm font-medium hover:bg-gray-50 disabled:opacity-50 transition-colors">
+              Next <app-icon-chevron-right customClass="h-4 w-4 ml-1"></app-icon-chevron-right>
+            </button>
+          </div>
+        </div>
+      </div>
+    </app-card-content>
+  </app-card>
+</div>
