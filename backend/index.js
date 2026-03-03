@@ -27,8 +27,13 @@ const notificationRoutes = require('./routes/notifications');
 // Import middleware
 const {handleUploadError} = require('./middlewares/upload');
 
-// Connect to database
-connectDB();
+// Initialize database and admin user
+const initAdmin = require('./scripts/initAdmin');
+
+(async () => {
+  await connectDB();
+  await initAdmin();
+})();
 
 const app = express();
 
