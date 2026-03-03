@@ -15,12 +15,13 @@ const complaintRoutes = require('./routes/complaints');
 const familyRoutes = require('./routes/family');
 const vehicleRoutes = require('./routes/vehicles');
 
-// Connect to database
-connectDB();
-
-// Initialize admin user
+// Initialize database and admin user
 const initAdmin = require('./scripts/initAdmin');
-initAdmin();
+
+(async () => {
+  await connectDB();
+  await initAdmin();
+})();
 
 const app = express();
 
