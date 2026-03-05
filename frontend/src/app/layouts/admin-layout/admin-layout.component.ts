@@ -232,6 +232,11 @@ export class AdminLayoutComponent implements OnInit {
     { name: 'Family Members', href: '/admin/family-members', icon: 'users' },
     { name: 'Vehicles', href: '/admin/vehicles', icon: 'truck' },
     { name: 'Notifications', href: '/admin/notifications', icon: 'megaphone' },
+    {
+      name: 'Parking Requests',
+      href: '/admin/parking-requests',
+      icon: 'truck',
+    },
   ];
 
   constructor(

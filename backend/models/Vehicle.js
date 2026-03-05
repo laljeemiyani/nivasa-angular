@@ -41,7 +41,6 @@ const vehicleSchema = new mongoose.Schema({
     parkingSlot: {
         type: String,
         required: [true, 'Parking slot is required'],
-        unique: true,
         match: [/^[A-F]-([1-9]|1[0-4])(0[1-4])-P[1-2]$/, 'Please enter a valid parking slot format (e.g., B-202-P1)'],
         trim: true
     },
@@ -79,5 +78,10 @@ const vehicleSchema = new mongoose.Schema({
 vehicleSchema.index({userId: 1});
 vehicleSchema.index({status: 1});
 vehicleSchema.index({createdAt: -1});
+// Partial unique index: parking slot must be unique among active (non-deleted) vehicles
+vehicleSchema.index(
+    { parkingSlot: 1 },
+    { unique: true, partialFilterExpression: { isDeleted: { $ne: true } } }
+);
 
 module.exports = mongoose.model('Vehicle', vehicleSchema);
