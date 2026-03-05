@@ -19,7 +19,7 @@ const notificationSchema = new mongoose.Schema({
   },
   type: {
     type: String,
-    enum: ['info', 'success', 'warning', 'error', 'status_update', 'new_registration'],
+    enum: ['info', 'success', 'warning', 'error', 'status_update', 'new_registration', 'parking_request'],
     default: 'info'
   },
   isRead: {
@@ -28,7 +28,7 @@ const notificationSchema = new mongoose.Schema({
   },
   relatedModel: {
     type: String,
-    enum: ['Vehicle', 'Maintenance', 'Payment', 'Notice', 'Other', 'User'],
+    enum: ['Vehicle', 'Maintenance', 'Payment', 'Notice', 'Other', 'User', 'ParkingSlotRequest'],
     default: 'Other'
   },
   relatedId: {

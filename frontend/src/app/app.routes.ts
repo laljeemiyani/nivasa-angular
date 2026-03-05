@@ -93,6 +93,13 @@ export const routes: Routes = [
             (m) => m.AdminNotificationsComponent,
           ),
       },
+      {
+        path: 'parking-requests',
+        loadComponent: () =>
+          import('./pages/admin/parking-requests/parking-requests.component').then(
+            (m) => m.AdminParkingRequestsComponent,
+          ),
+      },
     ],
   },
   {

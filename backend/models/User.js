@@ -88,6 +88,13 @@ const userSchema = new mongoose.Schema({
         ref: 'Vehicle'
     }],
 
+    parkingAllocation: {
+        type: Number,
+        default: 2,
+        min: [0, 'Parking allocation cannot be negative'],
+        max: [10, 'Parking allocation cannot exceed 10']
+    },
+
     complaints: [{
         type: mongoose.Schema.Types.ObjectId,
         ref: 'Complaint'

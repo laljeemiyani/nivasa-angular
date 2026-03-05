@@ -23,6 +23,7 @@ const complaintRoutes = require('./routes/complaints');
 const familyRoutes = require('./routes/family');
 const vehicleRoutes = require('./routes/vehicles');
 const notificationRoutes = require('./routes/notifications');
+const parkingRoutes = require('./routes/parking');
 
 // Import middleware
 const {handleUploadError} = require('./middlewares/upload');
@@ -82,6 +83,7 @@ app.use('/api/complaints', complaintRoutes);
 app.use('/api/family', familyRoutes);
 app.use('/api/vehicles', vehicleRoutes);
 app.use('/api/notifications', notificationRoutes);
+app.use('/api/parking', parkingRoutes);
 
 // Health check endpoint
 app.get('/api/health', (req, res) => {

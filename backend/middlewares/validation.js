@@ -157,7 +157,8 @@ const validateVehicle = [
         .withMessage('Vehicle color is required and cannot exceed 30 characters'),
 
     body('parkingSlot')
-        .optional({checkFalsy: true})
+        .notEmpty()
+        .withMessage('Parking slot is required')
         .trim()
         .matches(/^[A-F]-([1-9]|1[0-4])(0[1-4])-P[1-2]$/)
         .withMessage('Parking slot must be in format A-503-P1 (e.g., A-123-P1)'),

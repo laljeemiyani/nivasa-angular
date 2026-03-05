@@ -1,134 +1,569 @@
 <div class="space-y-6">
-  <div class="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-4">
+  <div
+    class="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-4"
+  >
     <div class="flex-1">
       <h1 class="text-2xl font-bold text-gray-900">My Vehicles</h1>
       <p class="text-gray-600 mt-1">Manage your registered vehicles</p>
       <div class="flex items-center text-sm text-amber-600 mt-1">
-        <app-icon-alert-circle customClass="h-4 w-4 mr-1"></app-icon-alert-circle>
+        <app-icon-alert-circle
+          customClass="h-4 w-4 mr-1"
+        ></app-icon-alert-circle>
         <span>New vehicles require admin approval</span>
       </div>
+      <div class="mt-2 text-sm text-gray-500">
+        Parking slots used:
+        <span class="font-semibold text-gray-800">{{
+          activeVehicleCount
+        }}</span>
+        /
+        <span class="font-semibold text-gray-800">{{ parkingAllocation }}</span>
+      </div>
     </div>
-    <div class="flex-shrink-0">
-      <button (click)="openCreateModal()" class="inline-flex items-center gap-2 bg-primary-600 hover:bg-primary-700 text-white px-4 py-2.5 rounded-lg font-medium transition-colors whitespace-nowrap">
+    <div class="flex flex-shrink-0 gap-2">
+      <button
+        (click)="openRequestHistory()"
+        class="inline-flex items-center gap-2 bg-gray-100 hover:bg-gray-200 text-gray-700 px-4 py-2.5 rounded-lg font-medium transition-colors whitespace-nowrap text-sm"
+      >
+        Request History
+      </button>
+      <button
+        *ngIf="canAddMore"
+        (click)="openCreateModal()"
+        class="inline-flex items-center gap-2 bg-primary-600 hover:bg-primary-700 text-white px-4 py-2.5 rounded-lg font-medium transition-colors whitespace-nowrap"
+      >
         <span class="text-lg leading-none">+</span> Add Vehicle
       </button>
+      <button
+        *ngIf="!canAddMore && !hasPendingRequest"
+        (click)="openRequestModal()"
+        class="inline-flex items-center gap-2 bg-amber-600 hover:bg-amber-700 text-white px-4 py-2.5 rounded-lg font-medium transition-colors whitespace-nowrap text-sm"
+      >
+        Request Additional Slot
+      </button>
+      <span
+        *ngIf="!canAddMore && hasPendingRequest"
+        class="inline-flex items-center gap-2 bg-amber-100 text-amber-800 px-4 py-2.5 rounded-lg font-medium whitespace-nowrap text-sm"
+      >
+        <app-icon-alert-circle customClass="h-4 w-4"></app-icon-alert-circle>
+        Request Pending
+      </span>
     </div>
   </div>
 
   <app-card>
     <app-card-header>
       <app-card-title>Vehicles</app-card-title>
-      <app-card-description>Add, edit, and manage your vehicle information</app-card-description>
+      <app-card-description
+        >Add, edit, and manage your vehicle information</app-card-description
+      >
     </app-card-header>
     <app-card-content>
       <div *ngIf="loading" class="flex justify-center items-center h-48">
-        <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600"></div>
+        <div
+          class="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600"
+        ></div>
       </div>
 
-      <div *ngIf="!loading && vehicles.length === 0" class="flex flex-col items-center justify-center h-48 text-center px-4">
+      <div
+        *ngIf="!loading && vehicles.length === 0"
+        class="flex flex-col items-center justify-center h-48 text-center px-4"
+      >
         <div class="bg-gray-100 p-4 rounded-full mb-4">
-          <svg class="h-8 w-8 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 17h2c.6 0 1-.4 1-1v-3c0-.9-.7-1.7-1.5-1.9C18.7 10.6 16 10 16 10s-1.3-1.4-2.2-2.3c-.5-.4-1.1-.7-1.8-.7H5c-.6 0-1.1.4-1.4.9l-1.4 2.9A3.7 3.7 0 002 12v4c0 .6.4 1 1 1h2m14 0c0 1.1-.9 2-2 2s-2-.9-2-2m0 0H9m-6 0c0 1.1-.9 2-2 2s-2-.9-2-2"></path></svg>
+          <svg
+            class="h-8 w-8 text-gray-400"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M19 17h2c.6 0 1-.4 1-1v-3c0-.9-.7-1.7-1.5-1.9C18.7 10.6 16 10 16 10s-1.3-1.4-2.2-2.3c-.5-.4-1.1-.7-1.8-.7H5c-.6 0-1.1.4-1.4.9l-1.4 2.9A3.7 3.7 0 002 12v4c0 .6.4 1 1 1h2m14 0c0 1.1-.9 2-2 2s-2-.9-2-2m0 0H9m-6 0c0 1.1-.9 2-2 2s-2-.9-2-2"
+            ></path>
+          </svg>
         </div>
-        <h3 class="text-lg font-medium text-gray-900 mb-1">No vehicles found</h3>
-        <p class="text-gray-500 text-sm">Click the Add Vehicle button to register your first vehicle</p>
+        <h3 class="text-lg font-medium text-gray-900 mb-1">
+          No vehicles found
+        </h3>
+        <p class="text-gray-500 text-sm">
+          Click the Add Vehicle button to register your first vehicle
+        </p>
       </div>
 
       <div *ngIf="!loading && vehicles.length > 0" class="space-y-4">
-        <div *ngFor="let vehicle of vehicles" class="border rounded-lg p-5 hover:bg-gray-50 transition-colors bg-white">
-          <div class="flex flex-col md:flex-row md:justify-between items-start gap-4">
+        <div
+          *ngFor="let vehicle of vehicles"
+          class="border rounded-lg p-5 hover:bg-gray-50 transition-colors bg-white"
+        >
+          <div
+            class="flex flex-col md:flex-row md:justify-between items-start gap-4"
+          >
             <div class="flex-1 min-w-0">
               <div class="flex flex-wrap items-center gap-2 mb-3">
-                <h3 class="font-semibold text-lg text-gray-900">{{ vehicle.vehicleName }} {{ vehicle.vehicleModel }}</h3>
-                <app-badge [variant]="getVehicleTypeColor(vehicle.vehicleType)">{{ vehicle.vehicleType }}</app-badge>
-                <app-badge [variant]="vehicle.status === 'approved' ? 'success' : vehicle.status === 'rejected' ? 'error' : 'warning'" class="flex items-center gap-1 capitalize">
-                  {{ vehicle.status === 'approved' ? 'Active' : vehicle.status === 'rejected' ? 'Rejected' : 'Pending' }}
+                <h3 class="font-semibold text-lg text-gray-900">
+                  {{ vehicle.vehicleName }} {{ vehicle.vehicleModel }}
+                </h3>
+                <app-badge
+                  [variant]="getVehicleTypeColor(vehicle.vehicleType)"
+                  >{{ vehicle.vehicleType }}</app-badge
+                >
+                <app-badge
+                  [variant]="
+                    vehicle.status === 'approved'
+                      ? 'success'
+                      : vehicle.status === 'rejected'
+                        ? 'error'
+                        : 'warning'
+                  "
+                  class="flex items-center gap-1 capitalize"
+                >
+                  {{
+                    vehicle.status === "approved"
+                      ? "Active"
+                      : vehicle.status === "rejected"
+                        ? "Rejected"
+                        : "Pending"
+                  }}
                 </app-badge>
               </div>
-              <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-y-2 gap-x-6 text-sm text-gray-600">
-                <div><span class="font-medium text-gray-700">Reg No:</span> <span class="bg-gray-100 px-1.5 font-mono py-0.5 rounded">{{ vehicle.vehicleNumber }}</span></div>
-                <div *ngIf="vehicle.vehicleColor"><span class="font-medium text-gray-700">Color:</span> {{ vehicle.vehicleColor }}</div>
-                <div *ngIf="vehicle.parkingSlot"><span class="font-medium text-gray-700">Parking Slot:</span> {{ vehicle.parkingSlot }}</div>
+              <div
+                class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-y-2 gap-x-6 text-sm text-gray-600"
+              >
+                <div>
+                  <span class="font-medium text-gray-700">Reg No:</span>
+                  <span class="bg-gray-100 px-1.5 font-mono py-0.5 rounded">{{
+                    vehicle.vehicleNumber
+                  }}</span>
+                </div>
+                <div *ngIf="vehicle.vehicleColor">
+                  <span class="font-medium text-gray-700">Color:</span>
+                  {{ vehicle.vehicleColor }}
+                </div>
+                <div *ngIf="vehicle.parkingSlot">
+                  <span class="font-medium text-gray-700">Parking Slot:</span>
+                  <span
+                    class="bg-blue-50 text-blue-700 px-1.5 py-0.5 rounded font-mono"
+                    >{{ vehicle.parkingSlot }}</span
+                  >
+                </div>
               </div>
             </div>
-            
-            <div class="flex items-center gap-2 w-full md:w-auto pt-3 md:pt-0 mt-2 md:mt-0 border-t md:border-0 border-gray-100">
-              <button (click)="openEditModal(vehicle)" [disabled]="vehicle.status === 'approved'" class="flex-1 md:flex-none inline-flex justify-center items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-blue-600 bg-blue-50 hover:bg-blue-100 rounded-md disabled:opacity-50 disabled:cursor-not-allowed">
+
+            <div
+              class="flex items-center gap-2 w-full md:w-auto pt-3 md:pt-0 mt-2 md:mt-0 border-t md:border-0 border-gray-100"
+            >
+              <button
+                (click)="openEditModal(vehicle)"
+                [disabled]="vehicle.status === 'approved'"
+                class="flex-1 md:flex-none inline-flex justify-center items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-blue-600 bg-blue-50 hover:bg-blue-100 rounded-md disabled:opacity-50 disabled:cursor-not-allowed"
+              >
                 Edit
               </button>
-              <button (click)="openDeleteDialog(vehicle)" [disabled]="vehicle.status === 'approved'" class="flex-1 md:flex-none inline-flex justify-center items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-red-600 bg-red-50 hover:bg-red-100 rounded-md disabled:opacity-50 disabled:cursor-not-allowed">
+              <button
+                (click)="openDeleteDialog(vehicle)"
+                [disabled]="vehicle.status === 'approved'"
+                class="flex-1 md:flex-none inline-flex justify-center items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-red-600 bg-red-50 hover:bg-red-100 rounded-md disabled:opacity-50 disabled:cursor-not-allowed"
+              >
                 <app-icon-trash customClass="w-4 h-4"></app-icon-trash> Delete
               </button>
             </div>
           </div>
-          <p *ngIf="vehicle.status === 'approved'" class="text-xs text-gray-400 mt-3 flex items-center gap-1"><app-icon-alert-circle customClass="w-3 h-3"></app-icon-alert-circle> Approved vehicles cannot be edited or deleted</p>
+          <p
+            *ngIf="vehicle.status === 'approved'"
+            class="text-xs text-gray-400 mt-3 flex items-center gap-1"
+          >
+            <app-icon-alert-circle
+              customClass="w-3 h-3"
+            ></app-icon-alert-circle>
+            Approved vehicles cannot be edited or deleted
+          </p>
         </div>
       </div>
     </app-card-content>
   </app-card>
 
   <!-- Create/Edit Modal -->
-  <app-modal *ngIf="isModalOpen" [isOpen]="isModalOpen" (close)="closeModal()" size="lg">
+  <app-modal
+    *ngIf="isModalOpen"
+    [isOpen]="isModalOpen"
+    (close)="closeModal()"
+    size="lg"
+  >
     <app-modal-header>
-      <app-modal-title>{{ modalMode === 'create' ? 'Add Vehicle' : 'Edit Vehicle' }}</app-modal-title>
-      <button class="absolute top-4 right-4 text-gray-400 hover:text-gray-600" (click)="closeModal()"><app-icon-x customClass="h-5 w-5"></app-icon-x></button>
+      <app-modal-title>{{
+        modalMode === "create" ? "Add Vehicle" : "Edit Vehicle"
+      }}</app-modal-title>
+      <button
+        class="absolute top-4 right-4 text-gray-400 hover:text-gray-600"
+        (click)="closeModal()"
+      >
+        <app-icon-x customClass="h-5 w-5"></app-icon-x>
+      </button>
     </app-modal-header>
     <app-modal-body>
       <form class="space-y-4">
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
           <!-- Type and Color -->
           <div class="space-y-2">
-            <label class="text-sm font-medium text-gray-700">Vehicle Type *</label>
-            <input type="text" [(ngModel)]="formData.vehicleType" name="vehicleType" placeholder="e.g. Car, Bike, EV" class="w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-primary-500" [ngClass]="{'border-red-500': errors['vehicleType'], 'border-gray-300': !errors['vehicleType']}" />
+            <label class="text-sm font-medium text-gray-700"
+              >Vehicle Type *</label
+            >
+            <select
+              [(ngModel)]="formData.vehicleType"
+              name="vehicleType"
+              class="w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-primary-500"
+              [ngClass]="{
+                'border-red-500': errors['vehicleType'],
+                'border-gray-300': !errors['vehicleType'],
+              }"
+            >
+              <option value="">Select type</option>
+              <option value="Car">Car</option>
+              <option value="Bike">Bike</option>
+              <option value="EV">EV</option>
+              <option value="Truck">Truck</option>
+              <option value="Bus">Bus</option>
+            </select>
           </div>
           <div class="space-y-2">
-            <label class="text-sm font-medium text-gray-700">Color</label>
-            <input type="text" [(ngModel)]="formData.vehicleColor" name="vehicleColor" placeholder="e.g. Red, Black" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-primary-500" />
+            <label class="text-sm font-medium text-gray-700">Color *</label>
+            <input
+              type="text"
+              [(ngModel)]="formData.vehicleColor"
+              name="vehicleColor"
+              placeholder="e.g. Red, Black"
+              class="w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-primary-500"
+              [ngClass]="{
+                'border-red-500': errors['vehicleColor'],
+                'border-gray-300': !errors['vehicleColor'],
+              }"
+            />
           </div>
-          
+
           <!-- Name and Model -->
           <div class="space-y-2">
-            <label class="text-sm font-medium text-gray-700">Vehicle Make / Name *</label>
-            <input type="text" [(ngModel)]="formData.vehicleName" name="vehicleName" placeholder="e.g. Honda, Toyota" class="w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-primary-500" [ngClass]="{'border-red-500': errors['vehicleName'], 'border-gray-300': !errors['vehicleName']}" />
+            <label class="text-sm font-medium text-gray-700"
+              >Vehicle Make / Name *</label
+            >
+            <input
+              type="text"
+              [(ngModel)]="formData.vehicleName"
+              name="vehicleName"
+              placeholder="e.g. Honda, Toyota"
+              class="w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-primary-500"
+              [ngClass]="{
+                'border-red-500': errors['vehicleName'],
+                'border-gray-300': !errors['vehicleName'],
+              }"
+            />
           </div>
           <div class="space-y-2">
             <label class="text-sm font-medium text-gray-700">Model *</label>
-            <input type="text" [(ngModel)]="formData.vehicleModel" name="vehicleModel" placeholder="e.g. Civic, Corolla" class="w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-primary-500" [ngClass]="{'border-red-500': errors['vehicleModel'], 'border-gray-300': !errors['vehicleModel']}" />
+            <input
+              type="text"
+              [(ngModel)]="formData.vehicleModel"
+              name="vehicleModel"
+              placeholder="e.g. Civic, Corolla"
+              class="w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-primary-500"
+              [ngClass]="{
+                'border-red-500': errors['vehicleModel'],
+                'border-gray-300': !errors['vehicleModel'],
+              }"
+            />
           </div>
 
-          <!-- Reg No and Parking -->
+          <!-- Reg No -->
           <div class="space-y-2">
-            <label class="text-sm font-medium text-gray-700">Registration Number *</label>
-            <input type="text" [(ngModel)]="formData.vehicleNumber" name="vehicleNumber" placeholder="e.g. MH04AB1234" class="w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-primary-500" [ngClass]="{'border-red-500': errors['vehicleNumber'], 'border-gray-300': !errors['vehicleNumber']}" />
+            <label class="text-sm font-medium text-gray-700"
+              >Registration Number *</label
+            >
+            <input
+              type="text"
+              [(ngModel)]="formData.vehicleNumber"
+              name="vehicleNumber"
+              placeholder="e.g. MH04AB1234"
+              class="w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-primary-500"
+              [ngClass]="{
+                'border-red-500': errors['vehicleNumber'],
+                'border-gray-300': !errors['vehicleNumber'],
+              }"
+            />
           </div>
+
+          <!-- Parking Slot (Searchable Dropdown) -->
           <div class="space-y-2">
-            <label class="text-sm font-medium text-gray-700">Parking Slot</label>
-            <input type="text" [(ngModel)]="formData.parkingSlot" name="parkingSlot" placeholder="e.g. P1-45" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-primary-500" />
+            <label class="text-sm font-medium text-gray-700"
+              >Parking Slot *</label
+            >
+            <!-- Filter controls -->
+            <div class="flex gap-2 mb-2">
+              <select
+                [(ngModel)]="filterWing"
+                name="filterWing"
+                (ngModelChange)="onSlotFilterChange()"
+                class="px-2 py-1 border border-gray-300 rounded-md text-xs focus:ring-1 focus:ring-primary-500"
+              >
+                <option value="">All Wings</option>
+                <option *ngFor="let w of wings" [value]="w">
+                  Wing {{ w }}
+                </option>
+              </select>
+              <select
+                [(ngModel)]="filterFloor"
+                name="filterFloor"
+                (ngModelChange)="onSlotFilterChange()"
+                class="px-2 py-1 border border-gray-300 rounded-md text-xs focus:ring-1 focus:ring-primary-500"
+              >
+                <option value="">All Floors</option>
+                <option *ngFor="let f of floors" [value]="f">
+                  Floor {{ f }}
+                </option>
+              </select>
+            </div>
+            <!-- Search input -->
+            <input
+              type="text"
+              [(ngModel)]="slotSearch"
+              name="slotSearch"
+              (ngModelChange)="onSlotSearchChange()"
+              placeholder="Search slots (e.g. A-301-P1)..."
+              class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-primary-500 text-sm"
+            />
+            <!-- Slot select -->
+            <select
+              [(ngModel)]="formData.parkingSlot"
+              name="parkingSlot"
+              class="w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-primary-500"
+              [ngClass]="{
+                'border-red-500': errors['parkingSlot'],
+                'border-gray-300': !errors['parkingSlot'],
+              }"
+            >
+              <option value="">Select a parking slot</option>
+              <option
+                *ngFor="let slot of filteredSlots"
+                [value]="slot.slotNumber"
+              >
+                {{ slot.slotNumber }}
+              </option>
+            </select>
+            <p *ngIf="loadingSlots" class="text-xs text-gray-400">
+              Loading slots...
+            </p>
+            <p
+              *ngIf="!loadingSlots && filteredSlots.length === 0"
+              class="text-xs text-red-500"
+            >
+              No available slots match your filter.
+            </p>
+            <p
+              *ngIf="!loadingSlots && filteredSlots.length > 0"
+              class="text-xs text-gray-400"
+            >
+              {{ filteredSlots.length }} slot(s) available
+            </p>
           </div>
         </div>
       </form>
     </app-modal-body>
     <app-modal-footer>
-      <button (click)="handleSubmit()" [disabled]="submitting" class="px-5 py-2.5 bg-primary-600 text-white font-medium rounded-lg hover:bg-primary-700 disabled:opacity-50 flex items-center justify-center min-w-[120px]">
-        <div *ngIf="submitting" class="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-         {{ modalMode === 'create' ? 'Add Vehicle' : 'Update Vehicle' }}
+      <button
+        (click)="handleSubmit()"
+        [disabled]="submitting"
+        class="px-5 py-2.5 bg-primary-600 text-white font-medium rounded-lg hover:bg-primary-700 disabled:opacity-50 flex items-center justify-center min-w-[120px]"
+      >
+        <div
+          *ngIf="submitting"
+          class="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"
+        ></div>
+        {{ modalMode === "create" ? "Add Vehicle" : "Update Vehicle" }}
       </button>
-      <button (click)="closeModal()" class="px-5 py-2.5 bg-gray-100 text-gray-700 font-medium rounded-lg hover:bg-gray-200 border border-transparent">Cancel</button>
+      <button
+        (click)="closeModal()"
+        class="px-5 py-2.5 bg-gray-100 text-gray-700 font-medium rounded-lg hover:bg-gray-200 border border-transparent"
+      >
+        Cancel
+      </button>
     </app-modal-footer>
   </app-modal>
 
   <!-- Delete Dialog -->
-  <app-modal *ngIf="isDeleteDialogOpen" [isOpen]="isDeleteDialogOpen" (close)="closeDeleteDialog()" size="sm">
+  <app-modal
+    *ngIf="isDeleteDialogOpen"
+    [isOpen]="isDeleteDialogOpen"
+    (close)="closeDeleteDialog()"
+    size="sm"
+  >
     <app-modal-body class="pt-6">
       <div class="flex flex-col items-center text-center">
-        <div class="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center mb-4">
+        <div
+          class="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center mb-4"
+        >
           <app-icon-trash customClass="w-6 h-6 text-red-600"></app-icon-trash>
         </div>
         <h3 class="text-lg font-bold text-gray-900 mb-2">Delete Vehicle</h3>
-        <p class="text-sm text-gray-500 mb-6">Are you sure you want to permanently remove this vehicle? This action cannot be undone.</p>
-        
+        <p class="text-sm text-gray-500 mb-6">
+          Are you sure you want to permanently remove this vehicle? This action
+          cannot be undone.
+        </p>
+
         <div class="flex gap-3 w-full">
-          <button (click)="closeDeleteDialog()" class="flex-1 px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 font-medium">Cancel</button>
-          <button (click)="handleDelete()" class="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 font-medium">Delete</button>
+          <button
+            (click)="closeDeleteDialog()"
+            class="flex-1 px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 font-medium"
+          >
+            Cancel
+          </button>
+          <button
+            (click)="handleDelete()"
+            class="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 font-medium"
+          >
+            Delete
+          </button>
+        </div>
+      </div>
+    </app-modal-body>
+  </app-modal>
+
+  <!-- Request Additional Parking Slot Modal -->
+  <app-modal
+    *ngIf="isRequestModalOpen"
+    [isOpen]="isRequestModalOpen"
+    (close)="closeRequestModal()"
+    size="md"
+  >
+    <app-modal-header>
+      <app-modal-title>Request Additional Parking Slot</app-modal-title>
+      <button
+        class="absolute top-4 right-4 text-gray-400 hover:text-gray-600"
+        (click)="closeRequestModal()"
+      >
+        <app-icon-x customClass="h-5 w-5"></app-icon-x>
+      </button>
+    </app-modal-header>
+    <app-modal-body>
+      <form class="space-y-4">
+        <div class="space-y-2">
+          <label class="text-sm font-medium text-gray-700"
+            >Number of Additional Slots *</label
+          >
+          <select
+            [(ngModel)]="requestFormData.requestedSlots"
+            name="requestedSlots"
+            class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-primary-500"
+          >
+            <option [ngValue]="1">1 slot</option>
+            <option [ngValue]="2">2 slots</option>
+          </select>
+        </div>
+        <div class="space-y-2">
+          <label class="text-sm font-medium text-gray-700">Reason *</label>
+          <textarea
+            [(ngModel)]="requestFormData.reason"
+            name="reason"
+            rows="4"
+            placeholder="Explain why you need additional parking slots..."
+            class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-primary-500 resize-none"
+          ></textarea>
+        </div>
+      </form>
+    </app-modal-body>
+    <app-modal-footer>
+      <button
+        (click)="submitParkingRequest()"
+        [disabled]="submitting"
+        class="px-5 py-2.5 bg-amber-600 text-white font-medium rounded-lg hover:bg-amber-700 disabled:opacity-50 flex items-center justify-center min-w-[140px]"
+      >
+        <div
+          *ngIf="submitting"
+          class="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"
+        ></div>
+        Submit Request
+      </button>
+      <button
+        (click)="closeRequestModal()"
+        class="px-5 py-2.5 bg-gray-100 text-gray-700 font-medium rounded-lg hover:bg-gray-200 border border-transparent"
+      >
+        Cancel
+      </button>
+    </app-modal-footer>
+  </app-modal>
+
+  <!-- Request History Modal -->
+  <app-modal
+    *ngIf="isRequestHistoryOpen"
+    [isOpen]="isRequestHistoryOpen"
+    (close)="closeRequestHistory()"
+    size="lg"
+  >
+    <app-modal-header>
+      <app-modal-title>Parking Slot Request History</app-modal-title>
+      <button
+        class="absolute top-4 right-4 text-gray-400 hover:text-gray-600"
+        (click)="closeRequestHistory()"
+      >
+        <app-icon-x customClass="h-5 w-5"></app-icon-x>
+      </button>
+    </app-modal-header>
+    <app-modal-body>
+      <div
+        *ngIf="loadingRequests"
+        class="flex justify-center items-center h-32"
+      >
+        <div
+          class="animate-spin rounded-full h-6 w-6 border-b-2 border-primary-600"
+        ></div>
+      </div>
+      <div
+        *ngIf="!loadingRequests && parkingRequests.length === 0"
+        class="text-center py-8 text-gray-500"
+      >
+        <p>No parking slot requests yet.</p>
+      </div>
+      <div
+        *ngIf="!loadingRequests && parkingRequests.length > 0"
+        class="space-y-3"
+      >
+        <div
+          *ngFor="let req of parkingRequests"
+          class="border rounded-lg p-4 bg-white"
+        >
+          <div class="flex items-center justify-between mb-2">
+            <span class="text-sm font-medium text-gray-900"
+              >{{ req.requestedSlots }} slot(s) requested</span
+            >
+            <app-badge
+              [variant]="getRequestStatusColor(req.status)"
+              class="capitalize"
+              >{{ req.status }}</app-badge
+            >
+          </div>
+          <p class="text-sm text-gray-600 mb-2">{{ req.reason }}</p>
+          <div
+            *ngIf="req.status === 'rejected' && req.rejectionReason"
+            class="bg-red-50 border border-red-200 rounded p-2 mb-2"
+          >
+            <p class="text-xs text-red-700">
+              <span class="font-medium">Rejection Reason:</span>
+              {{ req.rejectionReason }}
+            </p>
+          </div>
+          <div
+            *ngIf="req.status === 'approved' && req.adminNote"
+            class="bg-green-50 border border-green-200 rounded p-2 mb-2"
+          >
+            <p class="text-xs text-green-700">
+              <span class="font-medium">Admin Note:</span> {{ req.adminNote }}
+            </p>
+          </div>
+          <p class="text-xs text-gray-400">
+            Submitted: {{ req.createdAt | date: "medium" }}
+          </p>
+          <p *ngIf="req.reviewedAt" class="text-xs text-gray-400">
+            Reviewed: {{ req.reviewedAt | date: "medium" }}
+          </p>
         </div>
       </div>
     </app-modal-body>

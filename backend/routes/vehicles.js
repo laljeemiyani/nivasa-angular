@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const {
     addVehicle,
+    getAvailableSlots,
     getUserVehicles,
     getVehicle,
     updateVehicle,
@@ -17,6 +18,7 @@ router.use(authenticateToken);
 
 // User routes
 router.get('/', validatePagination, getAllVehicles);
+router.get('/available-slots', getAvailableSlots);
 router.post('/', validateVehicle, addVehicle);
 router.get('/my-vehicles', getUserVehicles);
 router.get('/:vehicleId', validateObjectId('vehicleId'), getVehicle);
@@ -28,3 +30,4 @@ router.use('/admin', requireAdmin);
 router.get('/admin/stats', getVehicleStats);
 
 module.exports = router;
+
