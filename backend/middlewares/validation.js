@@ -5,6 +5,10 @@ const {validateCommonEmail} = require('../utils/validators');
 const handleValidationErrors = (req, res, next) => {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
+        console.log('=== VALIDATION FAILED ===');
+        console.log('Request path:', req.originalUrl);
+        console.log('Request body:', JSON.stringify(req.body, null, 2));
+        console.log('Validation errors:', JSON.stringify(errors.array(), null, 2));
         return res.status(400).json({
             success: false,
             message: 'Validation failed',
@@ -122,9 +126,8 @@ const validateVehicle = [
         .trim()
         .withMessage('Vehicle type is required')
         .custom((value) => {
-            const validTypes = ['Car', 'Bike', 'EV', 'Truck', 'Bus'];
-            const normalizedValue = value.charAt(0).toUpperCase() + value.slice(1).toLowerCase();
-            if (!validTypes.includes(normalizedValue)) {
+            const validTypes = ['CAR', 'BIKE', 'EV', 'TRUCK', 'BUS'];
+            if (!validTypes.includes(value.toUpperCase())) {
                 throw new Error('Vehicle type must be one of: Car, Bike, EV, Truck, Bus');
             }
             return true;
@@ -228,6 +231,42 @@ const validatePagination = [
     handleValidationErrors
 ];
 
+// Profile update validation
+const validateProfileUpdate = [
+    body('phoneNumber')
+        .optional()
+        .matches(/^[0-9]{10}$/)
+        .withMessage('Phone number must be exactly 10 digits'),
+    body('fullName')
+        .optional()
+        .trim()
+        .isLength({min: 2, max: 100})
+        .withMessage('Full name must be between 2 and 100 characters'),
+    body('age')
+        .optional()
+        .isInt({min: 18, max: 120})
+        .withMessage('Age must be between 18 and 120 years'),
+    body('gender')
+        .optional()
+        .isIn(['Male', 'Female', 'Other'])
+        .withMessage('Gender must be Male, Female, or Other'),
+    body('wing')
+        .optional()
+        .trim()
+        .matches(/^[A-F]$/)
+        .withMessage('Wing must be a single letter from A to F'),
+    body('flatNumber')
+        .optional()
+        .trim()
+        .matches(/^([1-9]|1[0-4])(0[1-4])$/)
+        .withMessage('Flat number must be in format: 101-104, 201-204, ..., 1401-1404'),
+    body('residentType')
+        .optional()
+        .isIn(['Owner', 'Tenant'])
+        .withMessage('Resident type must be either Owner or Tenant'),
+    handleValidationErrors
+];
+
 module.exports = {
     handleValidationErrors,
     validateUserRegistration,
@@ -237,5 +276,6 @@ module.exports = {
     validateNotice,
     validateComplaint,
     validateObjectId,
-    validatePagination
+    validatePagination,
+    validateProfileUpdate
 };

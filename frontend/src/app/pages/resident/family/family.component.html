@@ -87,7 +87,7 @@
           </div>
           <div class="space-y-2">
             <label class="text-sm font-medium text-gray-700">Phone Number</label>
-            <input type="tel" [value]="formData.phone" (input)="handleInputChange($event, 'phone')" name="phone" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-primary-500" />
+            <input type="tel" [value]="formData.phone" (input)="handleInputChange($event, 'phone')" name="phone" maxlength="10" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-primary-500" />
             <p *ngIf="errors['phone']" class="text-red-500 text-xs">{{errors['phone']}}</p>
           </div>
           <div class="space-y-2">

@@ -97,6 +97,10 @@ import {
                   *ngSwitchCase="'truck'"
                   customClass="mr-3 h-5 w-5"
                 ></app-icon-truck>
+                <app-icon-user-circle
+                  *ngSwitchCase="'user'"
+                  customClass="mr-3 h-5 w-5"
+                ></app-icon-user-circle>
               </ng-container>
               {{ item.name }}
             </a>
@@ -151,6 +155,10 @@ import {
                   *ngSwitchCase="'truck'"
                   customClass="mr-3 h-5 w-5"
                 ></app-icon-truck>
+                <app-icon-user-circle
+                  *ngSwitchCase="'user'"
+                  customClass="mr-3 h-5 w-5"
+                ></app-icon-user-circle>
               </ng-container>
               {{ item.name }}
             </a>
@@ -236,6 +244,11 @@ export class AdminLayoutComponent implements OnInit {
       name: 'Parking Requests',
       href: '/admin/parking-requests',
       icon: 'truck',
+    },
+    {
+      name: 'Client Profile',
+      href: '/admin/client-profile',
+      icon: 'user',
     },
   ];
 
