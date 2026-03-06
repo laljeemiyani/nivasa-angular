@@ -5,6 +5,10 @@ const User = require('../models/User');
 // Add vehicle — with atomic parking slot claim
 const addVehicle = async (req, res) => {
     try {
+        // DEBUG: Log the full request payload
+        console.log('=== ADD VEHICLE DEBUG ===');
+        console.log('Full request body:', JSON.stringify(req.body, null, 2));
+
         let {
             vehicleType,
             vehicleName,
@@ -15,9 +19,10 @@ const addVehicle = async (req, res) => {
             registrationDate
         } = req.body;
 
-        // Normalize vehicle type to capitalized format
+        // Normalize vehicle type to canonical format (preserves 'EV' correctly)
         if (vehicleType) {
-            vehicleType = vehicleType.charAt(0).toUpperCase() + vehicleType.slice(1).toLowerCase();
+            const typeMap = { car: 'Car', bike: 'Bike', ev: 'EV', truck: 'Truck', bus: 'Bus' };
+            vehicleType = typeMap[vehicleType.toLowerCase()] || vehicleType;
         }
 
         // Capitalize other fields for consistency
@@ -33,6 +38,7 @@ const addVehicle = async (req, res) => {
 
         // Safety check for vehicleNumber
         if (!vehicleNumber) {
+            console.log('DEBUG: vehicleNumber is empty/falsy');
             return res.status(400).json({
                 success: false,
                 message: 'Vehicle number is required'
@@ -40,11 +46,17 @@ const addVehicle = async (req, res) => {
         }
 
         if (!parkingSlot) {
+            console.log('DEBUG: parkingSlot is empty/falsy');
             return res.status(400).json({
                 success: false,
                 message: 'Parking slot is required'
             });
         }
+
+        // DEBUG: Log format validation
+        const slotRegex = /^[A-F]-([1-9]|1[0-4])(0[1-4])-P[1-2]$/;
+        console.log(`DEBUG: parkingSlot value = "${parkingSlot}", regex test = ${slotRegex.test(parkingSlot)}`);
+        console.log(`DEBUG: parkingSlot chars =`, [...parkingSlot].map(c => c.charCodeAt(0)));
 
         // Check if vehicle number already exists (globally, not just for this user)
         const existingVehicle = await Vehicle.findOne({
@@ -53,6 +65,7 @@ const addVehicle = async (req, res) => {
         });
 
         if (existingVehicle) {
+            console.log('DEBUG: Duplicate vehicle number found:', existingVehicle.vehicleNumber);
             return res.status(400).json({
                 success: false,
                 message: 'Vehicle with this number already registered'
@@ -66,6 +79,8 @@ const addVehicle = async (req, res) => {
             isDeleted: { $ne: true }
         });
 
+        console.log(`DEBUG: User allocation = ${user.parkingAllocation || 2}, active vehicles = ${activeVehicleCount}`);
+
         if (activeVehicleCount >= (user.parkingAllocation || 2)) {
             return res.status(403).json({
                 success: false,
@@ -74,13 +89,19 @@ const addVehicle = async (req, res) => {
         }
 
         // Atomically claim the parking slot using findOneAndUpdate
+        console.log(`DEBUG: Claiming slot - query: { slotNumber: "${parkingSlot}", isOccupied: false }`);
         const claimedSlot = await ParkingSlot.findOneAndUpdate(
             { slotNumber: parkingSlot, isOccupied: false },
             { $set: { isOccupied: true, userId: req.user._id } },
             { new: true }
         );
 
+        console.log(`DEBUG: Claimed slot result:`, claimedSlot ? claimedSlot.slotNumber : 'NULL (slot not found or already occupied)');
+
         if (!claimedSlot) {
+            // DEBUG: Check if slot exists at all
+            const slotExists = await ParkingSlot.findOne({ slotNumber: parkingSlot });
+            console.log(`DEBUG: Slot exists in DB? ${!!slotExists}, isOccupied? ${slotExists?.isOccupied}`);
             return res.status(409).json({
                 success: false,
                 message: 'This parking slot is no longer available. It may have been taken by another resident. Please select a different slot.'
@@ -90,7 +111,7 @@ const addVehicle = async (req, res) => {
         // Create the vehicle
         let vehicle;
         try {
-            vehicle = new Vehicle({
+            const vehicleData = {
                 userId: req.user._id,
                 vehicleType,
                 vehicleName,
@@ -100,9 +121,14 @@ const addVehicle = async (req, res) => {
                 parkingSlot,
                 status: 'pending',
                 registrationDate: registrationDate ? new Date(registrationDate) : null
-            });
+            };
+            console.log('DEBUG: Creating vehicle with data:', JSON.stringify(vehicleData, null, 2));
+            vehicle = new Vehicle(vehicleData);
             await vehicle.save();
+            console.log('DEBUG: Vehicle saved successfully, id:', vehicle._id);
         } catch (saveError) {
+            console.error('DEBUG: Vehicle save FAILED:', saveError.message);
+            console.error('DEBUG: Save error details:', JSON.stringify(saveError, null, 2));
             // Rollback the parking slot claim if vehicle save fails
             await ParkingSlot.findOneAndUpdate(
                 { slotNumber: parkingSlot },
@@ -117,6 +143,7 @@ const addVehicle = async (req, res) => {
             { $set: { vehicleId: vehicle._id } }
         );
 
+        console.log('=== ADD VEHICLE SUCCESS ===');
         res.status(201).json({
             success: true,
             message: 'Vehicle added successfully',
@@ -124,6 +151,7 @@ const addVehicle = async (req, res) => {
         });
     } catch (error) {
         console.error('Add vehicle error:', error);
+        console.error('Add vehicle error stack:', error.stack);
         res.status(500).json({
             success: false,
             message: 'Failed to add vehicle',
@@ -246,9 +274,10 @@ const updateVehicle = async (req, res) => {
             registrationDate
         } = req.body;
 
-        // Normalize vehicle type to capitalized format
+        // Normalize vehicle type to canonical format (preserves 'EV' correctly)
         if (vehicleType) {
-            vehicleType = vehicleType.charAt(0).toUpperCase() + vehicleType.slice(1).toLowerCase();
+            const typeMap = { car: 'Car', bike: 'Bike', ev: 'EV', truck: 'Truck', bus: 'Bus' };
+            vehicleType = typeMap[vehicleType.toLowerCase()] || vehicleType;
         }
 
         // Capitalize other fields for consistency

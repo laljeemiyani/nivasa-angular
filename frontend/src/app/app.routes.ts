@@ -100,6 +100,13 @@ export const routes: Routes = [
             (m) => m.AdminParkingRequestsComponent,
           ),
       },
+      {
+        path: 'client-profile',
+        loadComponent: () =>
+          import('./pages/admin/client-profile/client-profile.component').then(
+            (m) => m.AdminClientProfileComponent,
+          ),
+      },
     ],
   },
   {

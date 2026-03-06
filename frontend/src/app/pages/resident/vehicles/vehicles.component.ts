@@ -264,6 +264,8 @@ export class ResidentVehiclesComponent implements OnInit {
 
     this.submitting = true;
     if (this.modalMode === 'create') {
+      console.log('=== FRONTEND VEHICLE SUBMIT ===');
+      console.log('Payload:', JSON.stringify(this.formData, null, 2));
       this.http.post(`${this.apiUrl}/vehicles`, this.formData).subscribe({
         next: () => {
           this.closeModal();
@@ -271,7 +273,11 @@ export class ResidentVehiclesComponent implements OnInit {
           this.submitting = false;
         },
         error: (err) => {
-          console.error(err);
+          console.error(
+            'Full error response:',
+            JSON.stringify(err.error, null, 2),
+          );
+          console.error('HTTP status:', err.status);
           alert(err.error?.message || 'Failed to save vehicle');
           this.submitting = false;
         },
