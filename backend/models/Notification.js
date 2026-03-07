@@ -22,6 +22,16 @@ const notificationSchema = new mongoose.Schema({
     enum: ['info', 'success', 'warning', 'error', 'status_update', 'new_registration', 'parking_request'],
     default: 'info'
   },
+  routingType: {
+    type: String,
+    enum: ['COMPLAINT_UPDATE', 'PARKING_REQUEST', 'BROADCAST', 'SYSTEM'],
+    default: 'SYSTEM',
+    required: [true, 'Routing type is required for frontend navigation']
+  },
+  referenceId: {
+    type: mongoose.Schema.Types.ObjectId,
+    default: null
+  },
   isRead: {
     type: Boolean,
     default: false
