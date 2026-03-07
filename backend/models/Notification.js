@@ -38,7 +38,7 @@ const notificationSchema = new mongoose.Schema({
   },
   relatedModel: {
     type: String,
-    enum: ['Vehicle', 'Maintenance', 'Payment', 'Notice', 'Other', 'User', 'ParkingSlotRequest'],
+    enum: ['Vehicle', 'Maintenance', 'Payment', 'Notice', 'Other', 'User', 'ParkingSlotRequest', 'Complaint'],
     default: 'Other'
   },
   relatedId: {

@@ -321,6 +321,22 @@ const deleteComplaint = async (req, res) => {
       });
     }
 
+    try {
+      const Notification = require('../models/Notification');
+      await Notification.updateMany(
+        { referenceId: complaintId, isDeleted: false },
+        {
+          $set: {
+            isDeleted: true,
+            deletedAt: new Date(),
+            deletedBy: req.user._id,
+          },
+        },
+      );
+    } catch (err) {
+      console.error("Failed to soft-delete orphaned notifications:", err);
+    }
+
     res.json({
       success: true,
       message: 'Complaint deleted successfully'

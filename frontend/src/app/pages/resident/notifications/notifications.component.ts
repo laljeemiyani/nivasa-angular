@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { NotificationService } from '../../../core/services/notification.service';
 import { Router } from '@angular/router';
 import { Observable } from 'rxjs';
+import { take } from 'rxjs/operators';
 import { environment } from '../../../../environments/environment';
 
 import {
@@ -88,14 +89,17 @@ export class ResidentNotificationsComponent implements OnInit {
     if (event) {
       event.stopPropagation();
     }
-    this.notificationService.markAsRead(id).subscribe({
-      next: () => {
-        this.fetchNotifications();
-      },
-      error: (error) => {
-        console.error('Error marking notification as read:', error);
-      },
-    });
+    this.notificationService
+      .markAsRead(id)
+      .pipe(take(1))
+      .subscribe({
+        next: () => {
+          this.fetchNotifications();
+        },
+        error: (error) => {
+          console.error('Error marking notification as read:', error);
+        },
+      });
   }
 
   handleDeleteNotification(id: string, event?: MouseEvent) {
@@ -179,24 +183,42 @@ export class ResidentNotificationsComponent implements OnInit {
     if (!notification.isRead) {
       // Optimistically update the UI to feel snappy
       notification.isRead = true;
-      this.notificationService.markAsRead(notification._id).subscribe({
-        next: () => {
-          // If we wanted to refresh completely we could call fetchNotifications()
-        },
-        error: (error) => {
-          console.error('Failed to mark notification as read on click:', error);
-          // Revert optimistic update on failure (optional, but good UX)
-          notification.isRead = false;
-        },
-      });
+      this.notificationService
+        .markAsRead(notification._id)
+        .pipe(take(1))
+        .subscribe({
+          next: () => {
+            // If we wanted to refresh completely we could call fetchNotifications()
+          },
+          error: (error) => {
+            console.error(
+              'Failed to mark notification as read on click:',
+              error,
+            );
+            // Revert optimistic update on failure (optional, but good UX)
+            notification.isRead = false;
+          },
+        });
     }
 
-    // 2. Perform Router Navigation based on routingType
+    // Navigate safely
+    this.routeToNotification(notification);
+  }
+
+  private routeToNotification(notification: any) {
+    if (!notification.routingType) return;
+
     switch (notification.routingType) {
       case 'COMPLAINT_UPDATE':
-        this.router.navigate(['/resident/complaints']);
-        // If your complaints page accepts query params or URL params for referenceId,
-        // you would append it here, e.g. this.router.navigate(['/resident/complaints', notification.referenceId])
+        if (notification.referenceId) {
+          this.router.navigate([
+            '/resident/complaints/view',
+            notification.referenceId,
+          ]);
+        } else {
+          // Fallback if no reference attached
+          this.router.navigate(['/resident/complaints']);
+        }
         break;
       case 'PARKING_REQUEST':
         this.router.navigate(['/resident/vehicles']);
@@ -204,7 +226,7 @@ export class ResidentNotificationsComponent implements OnInit {
       case 'BROADCAST':
       case 'SYSTEM':
       default:
-        // Do nothing for these types
+        // No action required
         break;
     }
   }
