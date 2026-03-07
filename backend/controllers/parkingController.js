@@ -189,6 +189,8 @@ const reviewParkingRequest = async (req, res) => {
                 title: 'Parking Slot Request Approved',
                 message: `Your request for ${request.requestedSlots} additional parking slot(s) has been approved.${adminNote ? ` Note: ${adminNote}` : ''} You can now assign a slot when adding your next vehicle.`,
                 type: 'parking_request',
+                routingType: 'PARKING_REQUEST',
+                referenceId: request._id,
                 relatedModel: 'ParkingSlotRequest',
                 relatedId: request._id
             });
@@ -207,6 +209,8 @@ const reviewParkingRequest = async (req, res) => {
                 title: 'Parking Slot Request Rejected',
                 message: `Your request for ${request.requestedSlots} additional parking slot(s) has been rejected. Reason: ${rejectionReason}`,
                 type: 'parking_request',
+                routingType: 'PARKING_REQUEST',
+                referenceId: request._id,
                 relatedModel: 'ParkingSlotRequest',
                 relatedId: request._id
             });

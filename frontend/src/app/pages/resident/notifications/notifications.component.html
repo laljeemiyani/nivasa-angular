@@ -22,32 +22,37 @@
         <div class="animate-spin rounded-full h-10 w-10 border-b-2 border-primary-600"></div>
       </div>
 
-      <div *ngIf="!loading && notifications.length === 0" class="text-center py-16 bg-gray-50/50 rounded-xl border border-dashed border-gray-200">
-        <app-icon-alert-circle customClass="mx-auto h-12 w-12 text-gray-300 mb-3"></app-icon-alert-circle>
-        <p class="text-gray-900 font-medium text-lg">You're all caught up!</p>
-        <p class="text-gray-500 text-sm mt-1">No new notifications found</p>
-      </div>
+      <ng-container *ngIf="notifications$ | async as notifications">
+        <div *ngIf="!loading && notifications.length === 0" class="text-center py-16 bg-gray-50/50 rounded-xl border border-dashed border-gray-200">
+          <app-icon-alert-circle customClass="mx-auto h-12 w-12 text-gray-300 mb-3"></app-icon-alert-circle>
+          <p class="text-gray-900 font-medium text-lg">You're all caught up!</p>
+          <p class="text-gray-500 text-sm mt-1">No new notifications found</p>
+        </div>
 
-      <div *ngIf="!loading && notifications.length > 0" class="space-y-4">
-        <div *ngFor="let notification of notifications" [ngClass]="['p-5 border rounded-xl transition-all duration-200 shadow-sm', !notification.isRead ? getNotificationTypeClass(notification.type) + ' border-l-4' : 'bg-white border-gray-100 hover:border-gray-200 hover:shadow-md']">
+        <div *ngIf="!loading && notifications.length > 0" class="space-y-4">
+          <div *ngFor="let notification of notifications" 
+               (click)="handleNotificationClick(notification)"
+               [ngClass]="['p-5 border rounded-xl transition-all duration-200 shadow-sm relative cursor-pointer hover:bg-slate-50', !notification.isRead ? getNotificationTypeClass(notification.type) + ' border-l-4 border-l-primary-500 bg-primary-50/20' : 'bg-white border-gray-100 hover:border-gray-200 hover:shadow-md']">
+            <!-- Unread Badge Indicator -->
+            <div *ngIf="!notification.isRead" class="absolute top-4 right-4 w-2.5 h-2.5 rounded-full bg-primary-600 shadow-sm animate-pulse"></div>
           <div class="flex items-start gap-4">
             <div class="flex-shrink-0 mt-0.5 text-2xl" [ngClass]="getNotificationIconStyle(notification.type)">
                {{ getNotificationIcon(notification.type) }}
             </div>
-            <div class="flex-1 min-w-0">
+            <div class="flex-1 min-w-0 pr-6">
                <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 mb-1">
-                  <h3 class="font-semibold text-gray-900 text-[16px] leading-tight">{{ notification.title }}</h3>
-                  <div class="flex items-center space-x-2 shrink-0 bg-white/60 p-1.5 rounded-lg">
-                     <button *ngIf="!notification.isRead" (click)="handleMarkAsRead(notification._id)" class="p-1.5 text-blue-600 hover:bg-blue-100 hover:text-blue-800 rounded-md transition-colors" title="Mark as read">
+                  <h3 [ngClass]="['text-[16px] leading-tight', !notification.isRead ? 'font-bold text-gray-900' : 'font-semibold text-gray-700']">{{ notification.title }}</h3>
+                  <div class="flex items-center space-x-2 shrink-0 bg-white/60 p-1.5 rounded-lg z-10">
+                     <button *ngIf="!notification.isRead" (click)="handleMarkAsRead(notification._id, $event)" class="p-1.5 text-blue-600 hover:bg-blue-100 hover:text-blue-800 rounded-md transition-colors" title="Mark as read">
                         <app-icon-check customClass="h-4 w-4"></app-icon-check>
                      </button>
-                     <button (click)="handleDeleteNotification(notification._id)" class="p-1.5 text-gray-400 hover:bg-red-50 hover:text-red-600 rounded-md transition-colors" title="Delete">
+                     <button (click)="handleDeleteNotification(notification._id, $event)" class="p-1.5 text-gray-400 hover:bg-red-50 hover:text-red-600 rounded-md transition-colors" title="Delete">
                         <app-icon-trash customClass="h-4 w-4"></app-icon-trash>
                      </button>
                   </div>
                </div>
-               <p class="text-gray-600 text-[15px] leading-relaxed">{{ notification.message }}</p>
-               <p class="text-xs text-gray-500 mt-3 font-medium flex items-center gap-1.5">
+               <p [ngClass]="['text-[15px] leading-relaxed', !notification.isRead ? 'text-gray-800' : 'text-gray-600']">{{ notification.message }}</p>
+               <p class="text-xs mt-3 font-medium flex items-center gap-1.5" [ngClass]="!notification.isRead ? 'text-primary-600' : 'text-gray-500'">
                   <app-icon-alert-circle customClass="h-3 w-3"></app-icon-alert-circle>
                   {{ formatDate(notification.createdAt) }}
                </p>
@@ -72,6 +77,7 @@
           </div>
         </div>
       </div>
+    </ng-container>
     </app-card-content>
   </app-card>
 </div>

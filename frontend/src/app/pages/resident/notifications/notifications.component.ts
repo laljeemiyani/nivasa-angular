@@ -1,6 +1,9 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { HttpClient } from '@angular/common/http';
+import { NotificationService } from '../../../core/services/notification.service';
+import { Router } from '@angular/router';
+import { Observable } from 'rxjs';
+import { take } from 'rxjs/operators';
 import { environment } from '../../../../environments/environment';
 
 import {
@@ -37,17 +40,19 @@ import {
   templateUrl: './notifications.component.html',
 })
 export class ResidentNotificationsComponent implements OnInit {
-  notifications: any[] = [];
+  notifications$!: Observable<any[]>;
   loading = true;
   page = 1;
   totalPages = 1;
   totalItems = 0;
 
-  private apiUrl = environment.apiUrl;
-
-  constructor(private http: HttpClient) {}
+  constructor(
+    private notificationService: NotificationService,
+    private router: Router,
+  ) {}
 
   ngOnInit() {
+    this.notifications$ = this.notificationService.notifications$;
     this.fetchNotifications();
   }
 
@@ -55,27 +60,16 @@ export class ResidentNotificationsComponent implements OnInit {
     this.loading = true;
     let params: any = { page: this.page.toString(), limit: '10' };
 
-    this.http.get<any>(`${this.apiUrl}/notifications`, { params }).subscribe({
-      next: (response) => {
-        this.notifications =
-          response.data?.notifications ||
-          response.data?.data?.notifications ||
-          [];
-        const pagination = response.data?.pagination ||
-          response.data?.data?.pagination || { totalPages: 1, totalItems: 0 };
-        this.totalPages = pagination.totalPages;
-        this.totalItems = pagination.totalItems;
-        this.loading = false;
-      },
-      error: (error) => {
-        console.error('Failed to fetch notifications:', error);
-        this.loading = false;
-      },
-    });
+    this.notificationService.fetchMyNotifications(params);
+
+    // Give the subject a moment to emit and smooth out the UI
+    setTimeout(() => {
+      this.loading = false;
+    }, 300);
   }
 
   setPage(p: number) {
-    if (p < 1 || p > this.totalPages) return;
+    if (p < 1) return;
     this.page = p;
     this.fetchNotifications();
   }
@@ -91,30 +85,31 @@ export class ResidentNotificationsComponent implements OnInit {
     return pages;
   }
 
-  handleMarkAsRead(id: string) {
-    this.http.put(`${this.apiUrl}/notifications/${id}/read`, {}).subscribe({
-      next: () => {
-        this.notifications = this.notifications.map((n) =>
-          n._id === id ? { ...n, isRead: true } : n,
-        );
-      },
-      error: (error) => {
-        console.error('Error marking notification as read:', error);
-      },
-    });
+  handleMarkAsRead(id: string, event?: MouseEvent) {
+    if (event) {
+      event.stopPropagation();
+    }
+    this.notificationService
+      .markAsRead(id)
+      .pipe(take(1))
+      .subscribe({
+        next: () => {
+          this.fetchNotifications();
+        },
+        error: (error) => {
+          console.error('Error marking notification as read:', error);
+        },
+      });
   }
 
-  handleDeleteNotification(id: string) {
+  handleDeleteNotification(id: string, event?: MouseEvent) {
+    if (event) {
+      event.stopPropagation();
+    }
     if (!confirm('Are you sure you want to delete this notification?')) return;
-    this.http.delete(`${this.apiUrl}/notifications/${id}`).subscribe({
+    this.notificationService.deleteNotification(id).subscribe({
       next: () => {
-        this.notifications = this.notifications.filter((n) => n._id !== id);
-        this.totalItems = Math.max(0, this.totalItems - 1);
-        if (this.notifications.length === 0 && this.page > 1) {
-          this.setPage(this.page - 1);
-        } else {
-          this.fetchNotifications();
-        }
+        this.fetchNotifications();
       },
       error: (error) => {
         console.error('Error deleting notification:', error);
@@ -123,12 +118,9 @@ export class ResidentNotificationsComponent implements OnInit {
   }
 
   handleMarkAllAsRead() {
-    this.http.put(`${this.apiUrl}/notifications/mark-all-read`, {}).subscribe({
+    this.notificationService.markAllAsRead().subscribe({
       next: () => {
-        this.notifications = this.notifications.map((n) => ({
-          ...n,
-          isRead: true,
-        }));
+        this.fetchNotifications();
       },
       error: (error) => {
         console.error('Error marking all notifications as read:', error);
@@ -184,5 +176,58 @@ export class ResidentNotificationsComponent implements OnInit {
       hour: '2-digit',
       minute: '2-digit',
     });
+  }
+
+  handleNotificationClick(notification: any) {
+    // 1. Mark as read if it is unread
+    if (!notification.isRead) {
+      // Optimistically update the UI to feel snappy
+      notification.isRead = true;
+      this.notificationService
+        .markAsRead(notification._id)
+        .pipe(take(1))
+        .subscribe({
+          next: () => {
+            // If we wanted to refresh completely we could call fetchNotifications()
+          },
+          error: (error) => {
+            console.error(
+              'Failed to mark notification as read on click:',
+              error,
+            );
+            // Revert optimistic update on failure (optional, but good UX)
+            notification.isRead = false;
+          },
+        });
+    }
+
+    // Navigate safely
+    this.routeToNotification(notification);
+  }
+
+  private routeToNotification(notification: any) {
+    if (!notification.routingType) return;
+
+    switch (notification.routingType) {
+      case 'COMPLAINT_UPDATE':
+        if (notification.referenceId) {
+          this.router.navigate([
+            '/resident/complaints/view',
+            notification.referenceId,
+          ]);
+        } else {
+          // Fallback if no reference attached
+          this.router.navigate(['/resident/complaints']);
+        }
+        break;
+      case 'PARKING_REQUEST':
+        this.router.navigate(['/resident/vehicles']);
+        break;
+      case 'BROADCAST':
+      case 'SYSTEM':
+      default:
+        // No action required
+        break;
+    }
   }
 }

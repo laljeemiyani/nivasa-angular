@@ -266,6 +266,22 @@ const updateComplaintStatus = async (req, res) => {
       });
     }
 
+    try {
+      const { createNotificationInternal } = require('../controllers/notificationController');
+      await createNotificationInternal({
+        userId: complaint.userId._id,
+        title: `Complaint Status Updated`,
+        message: `Your complaint regarding "${complaint.title}" has been marked as ${status.replace('_', ' ')}.`,
+        type: status === 'resolved' ? 'success' : 'info',
+        routingType: 'COMPLAINT_UPDATE',
+        referenceId: complaint._id,
+        relatedModel: 'Complaint',
+        relatedId: complaint._id
+      });
+    } catch (notifError) {
+      console.error('Failed to send complaint notification:', notifError);
+    }
+
     res.json({
       success: true,
       message: 'Complaint status updated successfully',
@@ -281,18 +297,44 @@ const updateComplaintStatus = async (req, res) => {
   }
 };
 
-// Delete complaint
+// Delete complaint (soft delete)
 const deleteComplaint = async (req, res) => {
   try {
     const { complaintId } = req.params;
 
-    const complaint = await Complaint.findByIdAndDelete(complaintId);
+    const complaint = await Complaint.findOneAndUpdate(
+      { _id: complaintId, isDeleted: false },
+      {
+        $set: {
+          isDeleted: true,
+          deletedAt: new Date(),
+          deletedBy: req.user._id
+        }
+      },
+      { new: true }
+    );
 
     if (!complaint) {
       return res.status(404).json({
         success: false,
-        message: 'Complaint not found'
+        message: 'Complaint not found or already deleted'
       });
+    }
+
+    try {
+      const Notification = require('../models/Notification');
+      await Notification.updateMany(
+        { referenceId: complaintId, isDeleted: false },
+        {
+          $set: {
+            isDeleted: true,
+            deletedAt: new Date(),
+            deletedBy: req.user._id,
+          },
+        },
+      );
+    } catch (err) {
+      console.error("Failed to soft-delete orphaned notifications:", err);
     }
 
     res.json({
@@ -304,6 +346,44 @@ const deleteComplaint = async (req, res) => {
     res.status(500).json({
       success: false,
       message: 'Failed to delete complaint',
+      error: error.message
+    });
+  }
+};
+
+// Get soft-deleted complaint history
+const getComplaintHistory = async (req, res) => {
+  try {
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 10;
+    const filter = { isDeleted: true };
+
+    const complaints = await Complaint.find(filter)
+      .populate('userId', 'fullName email wing flatNumber')
+      .populate('deletedBy', 'fullName email')
+      .sort({ deletedAt: -1 })
+      .skip((page - 1) * limit)
+      .limit(limit);
+
+    const total = await Complaint.countDocuments(filter);
+
+    res.json({
+      success: true,
+      data: {
+        complaints,
+        pagination: {
+          currentPage: page,
+          totalPages: Math.ceil(total / limit),
+          totalItems: total,
+          itemsPerPage: limit
+        }
+      }
+    });
+  } catch (error) {
+    console.error('Get complaint history error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch complaint history',
       error: error.message
     });
   }
@@ -433,6 +513,7 @@ module.exports = {
   getComplaints,
   updateComplaintStatus,
   deleteComplaint,
+  getComplaintHistory,
   getVehicles,
   updateVehicleStatus,
   getFamilyMembers: async (req, res) => {
@@ -509,6 +590,50 @@ module.exports = {
       res.status(500).json({
         success: false,
         message: error.message || 'Failed to delete resident',
+        error: error.message
+      });
+    }
+  },
+  broadcastNotification: async (req, res) => {
+    try {
+      const { title, message } = req.body;
+      
+      if (!title || !message) {
+        return res.status(400).json({
+          success: false,
+          message: 'Title and message are required for broadcast'
+        });
+      }
+
+      const activeUsers = await User.find({ isDeleted: false }, '_id').lean();
+      
+      if (activeUsers.length === 0) {
+        return res.json({ success: true, message: 'No active users to notify' });
+      }
+
+      const Notification = require('../models/Notification');
+      const notificationsToInsert = activeUsers.map(user => ({
+        userId: user._id,
+        title,
+        message,
+        type: 'info',
+        routingType: 'BROADCAST',
+        referenceId: null,
+        isRead: false
+      }));
+
+      await Notification.insertMany(notificationsToInsert, { ordered: false });
+
+      res.json({
+        success: true,
+        message: `Broadcast sent to ${activeUsers.length} residents successfully`
+      });
+
+    } catch (error) {
+      console.error('Broadcast notification error:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Failed to broadcast notification',
         error: error.message
       });
     }
