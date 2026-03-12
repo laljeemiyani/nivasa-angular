@@ -126,7 +126,7 @@ export class ApiService {
         }
       });
     }
-    return this.http.get(`${this.residentUrl}/complaints`, {
+    return this.http.get(`${this.residentUrl}/complaints/my-complaints`, {
       params: httpParams,
     });
   }

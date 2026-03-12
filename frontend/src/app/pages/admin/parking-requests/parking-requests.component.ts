@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { HttpClient } from '@angular/common/http';
 import { environment } from '../../../../environments/environment';
+import { ToastService } from '../../../core/services/toast.service';
 
 import {
   CardComponent,
@@ -65,7 +66,10 @@ export class AdminParkingRequestsComponent implements OnInit {
 
   private apiUrl = environment.apiUrl;
 
-  constructor(private http: HttpClient) {}
+  constructor(
+    private http: HttpClient,
+    private toastService: ToastService,
+  ) {}
 
   ngOnInit() {
     this.fetchRequests();
@@ -119,7 +123,7 @@ export class AdminParkingRequestsComponent implements OnInit {
 
   submitReview() {
     if (this.reviewAction === 'reject' && !this.rejectionReason.trim()) {
-      alert('Rejection reason is required.');
+      this.toastService.warning('Validation Error', 'Rejection reason is required.');
       return;
     }
 
@@ -139,13 +143,19 @@ export class AdminParkingRequestsComponent implements OnInit {
       )
       .subscribe({
         next: () => {
+          this.toastService.success(
+            this.reviewAction === 'approve' ? 'Request Approved' : 'Request Rejected',
+            this.reviewAction === 'approve' 
+              ? 'The parking request has been approved.' 
+              : 'The parking request has been rejected.'
+          );
           this.closeReviewModal();
           this.fetchRequests();
           this.submitting = false;
         },
         error: (err) => {
           console.error(err);
-          alert(err.error?.message || 'Failed to process request');
+          this.toastService.error('Error', err.error?.message || 'Failed to process request');
           this.submitting = false;
         },
       });

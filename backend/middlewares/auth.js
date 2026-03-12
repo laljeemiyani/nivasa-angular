@@ -27,11 +27,19 @@ const authenticateToken = async (req, res, next) => {
 
         const tokenVersion = decoded.sessionVersion ?? 0;
 
-        if (user.isDeleted) {
+        if (user.accountStatus === 'inactive') {
             return res.status(410).json({
                 success: false,
-                message: 'Account deleted. Please contact the admin.',
-                code: 'ACCOUNT_DELETED'
+                message: 'Account inactive. Please contact the admin.',
+                code: 'ACCOUNT_INACTIVE'
+            });
+        }
+        
+        if (user.accountStatus === 'suspended') {
+            return res.status(403).json({
+                success: false,
+                message: 'Account suspended. Please contact the admin.',
+                code: 'ACCOUNT_SUSPENDED'
             });
         }
 
@@ -54,6 +62,7 @@ const authenticateToken = async (req, res, next) => {
         }
 
         req.user = user;
+        req.token = token;
         next();
     } catch (error) {
         if (error.name === 'JsonWebTokenError') {
@@ -108,7 +117,7 @@ const optionalAuth = async (req, res, next) => {
             const user = await User.findById(decoded.userId).select('-password');
             if (
                 user &&
-                !user.isDeleted &&
+                user.accountStatus === 'active' &&
                 (decoded.sessionVersion ?? 0) === (user.sessionVersion || 0) &&
                 user.status === 'approved'
             ) {

@@ -1,8 +1,15 @@
 const User = require('../models/User');
 const config = require('../config/config');
+const mongoose = require('mongoose');
 
 const initAdmin = async () => {
   try {
+    // Check if mongoose is connected
+    if (mongoose.connection.readyState !== 1) {
+      console.log('⚠️ Database not connected, skipping admin initialization');
+      return;
+    }
+    
     // Check if admin already exists
     const existingAdmin = await User.findOne({ email: config.ADMIN_EMAIL });
     

@@ -1,0 +1,246 @@
+/* Settings Component Styles */
+
+/* Scrollbar hide utility */
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+
+/* Smooth scroll behavior */
+html {
+  scroll-behavior: smooth;
+}
+
+/* Section transitions */
+section {
+  transition: box-shadow 0.3s ease;
+}
+
+section:hover {
+  box-shadow: 0 10px 40px -10px rgba(0, 0, 0, 0.1);
+}
+
+/* Form input focus states */
+input:focus,
+select:focus,
+textarea:focus {
+  outline: none;
+}
+
+/* Toggle switch styling */
+input[type="checkbox"] {
+  cursor: pointer;
+}
+
+/* Table row hover */
+table tbody tr {
+  transition: background-color 0.15s ease;
+}
+
+/* Loading spinner animation */
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.animate-spin {
+  animation: spin 1s linear infinite;
+}
+
+/* Pulse animation for live indicator */
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
+.animate-pulse {
+  animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+/* Password strength bar transition */
+.password-strength-bar {
+  transition: width 0.3s ease, background-color 0.3s ease;
+}
+
+/* Card hover effect */
+.settings-card {
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.settings-card:hover {
+  transform: translateY(-2px);
+}
+
+/* Navigation pill active state */
+.nav-pill {
+  transition: all 0.2s ease;
+}
+
+.nav-pill:hover {
+  transform: scale(1.02);
+}
+
+/* Danger zone specific styles */
+.danger-zone input {
+  font-family: monospace;
+}
+
+/* Sticky nav shadow on scroll */
+.sticky-nav {
+  transition: box-shadow 0.3s ease;
+}
+
+.sticky-nav.scrolled {
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+}
+
+/* Toast notification animation */
+.toast-enter {
+  animation: slideIn 0.3s ease;
+}
+
+@keyframes slideIn {
+  from {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+/* Modal backdrop */
+.modal-backdrop {
+  background-color: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(4px);
+}
+
+/* Custom scrollbar for tables */
+.custom-scrollbar::-webkit-scrollbar {
+  height: 8px;
+  width: 8px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 4px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: #c1c1c1;
+  border-radius: 4px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: #a8a8a8;
+}
+
+/* Dark mode scrollbar – theme-aware */
+.dark .custom-scrollbar::-webkit-scrollbar-track {
+  background: var(--color-border);
+}
+
+.dark .custom-scrollbar::-webkit-scrollbar-thumb {
+  background: #475569;
+}
+
+.dark .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: #64748b;
+}
+
+/* Form validation states */
+input.ng-invalid.ng-touched,
+select.ng-invalid.ng-touched {
+  border-color: #ef4444;
+}
+
+input.ng-invalid.ng-touched:focus,
+select.ng-invalid.ng-touched:focus {
+  border-color: #ef4444;
+  box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.1);
+}
+
+/* Button disabled state */
+button:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+/* Profile photo upload area */
+.photo-upload-area {
+  transition: all 0.2s ease;
+}
+
+.photo-upload-area:hover {
+  transform: scale(1.05);
+}
+
+/* Category item drag handle */
+.category-handle {
+  cursor: grab;
+}
+
+.category-handle:active {
+  cursor: grabbing;
+}
+
+/* Stats card gradient backgrounds */
+.stat-card-online {
+  background: linear-gradient(135deg, #dcfce7 0%, #bbf7d0 100%);
+}
+
+.stat-card-inactive {
+  background: linear-gradient(135deg, #fee2e2 0%, #fecaca 100%);
+}
+
+.stat-card-logins {
+  background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%);
+}
+
+.dark .stat-card-online {
+  background: linear-gradient(135deg, rgba(34, 197, 94, 0.2) 0%, rgba(34, 197, 94, 0.1) 100%);
+}
+
+.dark .stat-card-inactive {
+  background: linear-gradient(135deg, rgba(239, 68, 68, 0.2) 0%, rgba(239, 68, 68, 0.1) 100%);
+}
+
+.dark .stat-card-logins {
+  background: linear-gradient(135deg, rgba(59, 130, 246, 0.2) 0%, rgba(59, 130, 246, 0.1) 100%);
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .sticky-nav {
+    overflow-x: auto;
+  }
+  
+  section {
+    margin-left: -1rem;
+    margin-right: -1rem;
+    border-radius: 0;
+  }
+}
+
+/* Print styles for exports */
+@media print {
+  .no-print {
+    display: none !important;
+  }
+  
+  section {
+    break-inside: avoid;
+    box-shadow: none;
+    border: 1px solid #ddd;
+  }
+}

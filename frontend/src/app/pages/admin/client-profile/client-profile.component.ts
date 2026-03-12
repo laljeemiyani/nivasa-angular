@@ -23,8 +23,8 @@ import {
   template: `
     <div class="space-y-6">
       <div>
-        <h1 class="text-2xl font-bold text-gray-900">Client Profile</h1>
-        <p class="text-gray-600 mt-1">Manage society and client information</p>
+        <h1 class="text-2xl font-bold text-slate-900 dark:text-slate-100">Client Profile</h1>
+        <p class="text-slate-500 dark:text-slate-400 mt-1">Manage society and client information</p>
       </div>
 
       <app-card>
@@ -38,9 +38,9 @@ import {
           <div
             class="flex flex-col items-center justify-center h-48 text-center px-4"
           >
-            <div class="bg-gray-100 p-4 rounded-full mb-4">
+            <div class="bg-slate-100 dark:bg-slate-800 p-4 rounded-full mb-4 border border-slate-200 dark:border-slate-700">
               <svg
-                class="h-8 w-8 text-gray-400"
+                class="h-8 w-8 text-slate-500 dark:text-slate-400"
                 fill="none"
                 viewBox="0 0 24 24"
                 stroke="currentColor"
@@ -53,10 +53,10 @@ import {
                 />
               </svg>
             </div>
-            <h3 class="text-lg font-medium text-gray-900 mb-1">
+            <h3 class="text-lg font-medium text-slate-900 dark:text-slate-100 mb-1">
               Client Profile
             </h3>
-            <p class="text-gray-500 text-sm">
+            <p class="text-slate-500 dark:text-slate-400 text-sm">
               Client profile management coming soon.
             </p>
           </div>

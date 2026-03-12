@@ -1,6 +1,7 @@
 const Vehicle = require('../models/Vehicle');
 const ParkingSlot = require('../models/ParkingSlot');
 const User = require('../models/User');
+const { notifyAdmins } = require('./notificationController');
 
 // Add vehicle — with atomic parking slot claim
 const addVehicle = async (req, res) => {
@@ -90,7 +91,7 @@ const addVehicle = async (req, res) => {
 
         // Atomically claim the parking slot using findOneAndUpdate
         console.log(`DEBUG: Claiming slot - query: { slotNumber: "${parkingSlot}", isOccupied: false }`);
-        const claimedSlot = await ParkingSlot.findOneAndUpdate(
+        let claimedSlot = await ParkingSlot.findOneAndUpdate(
             { slotNumber: parkingSlot, isOccupied: false },
             { $set: { isOccupied: true, userId: req.user._id } },
             { new: true }
@@ -101,11 +102,29 @@ const addVehicle = async (req, res) => {
         if (!claimedSlot) {
             // DEBUG: Check if slot exists at all
             const slotExists = await ParkingSlot.findOne({ slotNumber: parkingSlot });
-            console.log(`DEBUG: Slot exists in DB? ${!!slotExists}, isOccupied? ${slotExists?.isOccupied}`);
-            return res.status(409).json({
-                success: false,
-                message: 'This parking slot is no longer available. It may have been taken by another resident. Please select a different slot.'
-            });
+            if (slotExists && slotExists.isOccupied) {
+                return res.status(409).json({
+                    success: false,
+                    message: 'This parking slot is no longer available. It may have been taken by another resident. Please select a different slot.'
+                });
+            } else if (!slotExists) {
+                const parts = parkingSlot.split('-');
+                const wing = parts[0];
+                const flatString = parts[1];
+                const position = parts[2];
+                const floor = parseInt(flatString.substring(0, flatString.length - 2), 10);
+
+                claimedSlot = new ParkingSlot({
+                    slotNumber: parkingSlot,
+                    wing,
+                    floor,
+                    flatNumber: flatString,
+                    position,
+                    isOccupied: true,
+                    userId: req.user._id
+                });
+                await claimedSlot.save();
+            }
         }
 
         // Create the vehicle
@@ -142,6 +161,15 @@ const addVehicle = async (req, res) => {
             { slotNumber: parkingSlot },
             { $set: { vehicleId: vehicle._id } }
         );
+
+        // Notify admins about new vehicle registration
+        await notifyAdmins({
+            title: 'New Vehicle Registration',
+            message: `A new vehicle (${vehicleNumber.toUpperCase()}) has been registered by ${user.fullName} and is awaiting approval.`,
+            type: 'parking_request',
+            relatedModel: 'Vehicle',
+            relatedId: vehicle._id
+        });
 
         console.log('=== ADD VEHICLE SUCCESS ===');
         res.status(201).json({
@@ -327,23 +355,43 @@ const updateVehicle = async (req, res) => {
                 { $set: { isOccupied: false, userId: null, vehicleId: null } }
             );
 
-            // Atomically claim new slot
-            const claimedSlot = await ParkingSlot.findOneAndUpdate(
+            let claimedSlot = await ParkingSlot.findOneAndUpdate(
                 { slotNumber: parkingSlot, isOccupied: false },
                 { $set: { isOccupied: true, userId: req.user._id, vehicleId: existingVehicle._id } },
                 { new: true }
             );
 
             if (!claimedSlot) {
-                // Re-claim old slot since new one failed
-                await ParkingSlot.findOneAndUpdate(
-                    { slotNumber: existingVehicle.parkingSlot },
-                    { $set: { isOccupied: true, userId: req.user._id, vehicleId: existingVehicle._id } }
-                );
-                return res.status(409).json({
-                    success: false,
-                    message: 'The new parking slot is no longer available. Your original slot has been kept.'
-                });
+                const slotExists = await ParkingSlot.findOne({ slotNumber: parkingSlot });
+                if (slotExists && slotExists.isOccupied) {
+                    // Re-claim old slot since new one failed
+                    await ParkingSlot.findOneAndUpdate(
+                        { slotNumber: existingVehicle.parkingSlot },
+                        { $set: { isOccupied: true, userId: req.user._id, vehicleId: existingVehicle._id } }
+                    );
+                    return res.status(409).json({
+                        success: false,
+                        message: 'The new parking slot is no longer available. Your original slot has been kept.'
+                    });
+                } else if (!slotExists) {
+                    const parts = parkingSlot.split('-');
+                    const wing = parts[0];
+                    const flatString = parts[1];
+                    const position = parts[2];
+                    const floor = parseInt(flatString.substring(0, flatString.length - 2), 10);
+
+                    claimedSlot = new ParkingSlot({
+                        slotNumber: parkingSlot,
+                        wing,
+                        floor,
+                        flatNumber: flatString,
+                        position,
+                        isOccupied: true,
+                        userId: req.user._id,
+                        vehicleId: existingVehicle._id
+                    });
+                    await claimedSlot.save();
+                }
             }
         }
 
@@ -478,20 +526,25 @@ const getVehicleStats = async (req, res) => {
     }
 };
 
-// Get all vehicles (Admin or general listing)
+// Get all vehicles (Admin or general listing, supports optional userId filter)
 const getAllVehicles = async (req, res) => {
     try {
         const page = parseInt(req.query.page) || 1;
         const limit = parseInt(req.query.limit) || 10;
         const skip = (page - 1) * limit;
 
+        const filter = { isDeleted: { $ne: true } };
+        if (req.query.userId) {
+            filter.userId = req.query.userId;
+        }
+
         const [vehicles, total] = await Promise.all([
-            Vehicle.find({ isDeleted: { $ne: true } })
+            Vehicle.find(filter)
                 .populate('userId', 'fullName email wing flatNumber profilePhoto')
                 .skip(skip)
                 .limit(limit)
                 .sort({ createdAt: -1 }),
-            Vehicle.countDocuments({ isDeleted: { $ne: true } })
+            Vehicle.countDocuments(filter)
         ]);
 
         res.json({

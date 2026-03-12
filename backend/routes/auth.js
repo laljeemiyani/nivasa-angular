@@ -3,8 +3,10 @@ const router = express.Router();
 const {
     register,
     login,
+    logout,
     getProfile,
     updateProfile,
+    changeEmail,
     changePassword,
     verifyToken,
     updateProfilePhoto
@@ -25,7 +27,9 @@ router.post('/login', validateUserLogin, login);
 router.get('/profile', authenticateToken, getProfile);
 router.put('/profile', authenticateToken, validateProfileUpdate, updateProfile);
 router.post('/update-profile-photo', authenticateToken, uploadProfilePhoto.single('profilePhoto'), updateProfilePhoto);
+router.put('/change-email', authenticateToken, changeEmail);
 router.put('/change-password', authenticateToken, changePassword);
 router.get('/verify', authenticateToken, verifyToken);
+router.post('/logout', authenticateToken, logout);
 
 module.exports = router;
