@@ -1,4 +1,5 @@
 const Notice = require('../models/Notice');
+const User = require('../models/User');
 
 // Create new notice (Admin only)
 const createNotice = async (req, res) => {
@@ -25,6 +26,49 @@ const createNotice = async (req, res) => {
         const populatedNotice = await Notice.findById(notice._id)
             .populate('userId', 'fullName');
 
+        // After creating a notice, broadcast a notification to all residents
+        try {
+            // Fetch all active residents
+            const residents = await User.find(
+                { role: 'resident', isDeleted: false },
+                '_id'
+            ).lean();
+
+            if (residents.length) {
+                const Notification = require('../models/Notification');
+
+                // Map priority to existing notification types
+                const p = (priority || 'medium').toLowerCase();
+                let notifType = 'info';
+                if (p === 'high') {
+                    notifType = 'warning';
+                } else if (p === 'medium') {
+                    notifType = 'info';
+                } else if (p === 'low') {
+                    notifType = 'info';
+                }
+
+                const cat = (category || 'general');
+                const titleText = `New ${cat.charAt(0).toUpperCase() + cat.slice(1)} Notice`;
+                const messageText = `${title} - ${description}`.slice(0, 300);
+
+                const notificationsToInsert = residents.map((r) => ({
+                    userId: r._id,
+                    title: titleText,
+                    message: messageText,
+                    type: notifType, // must be one of: info, success, warning, error, status_update, new_registration, parking_request
+                    routingType: 'BROADCAST', // valid routing type for global messages
+                    referenceId: notice._id,
+                    relatedModel: 'Notice',
+                    relatedId: notice._id
+                }));
+
+                await Notification.insertMany(notificationsToInsert, { ordered: false });
+            }
+        } catch (notifError) {
+            console.error('Failed to broadcast notice notification:', notifError);
+        }
+
         res.status(201).json({
             success: true,
             message: 'Notice created successfully',
@@ -50,13 +94,24 @@ const getNotices = async (req, res) => {
         const category = req.query.category;
         const priority = req.query.priority;
         const search = req.query.search;
-        const isActive = req.query.isActive !== 'false'; // Default to true
+
+        const isAdmin = req.user && req.user.role === 'admin';
+
+        // For residents/public: always show only active notices
+        // For admins: respect explicit isActive flag, otherwise show all
+        let isActive = true;
+        if (isAdmin) {
+            if (req.query.hasOwnProperty('isActive')) {
+                isActive = req.query.isActive !== 'false';
+            } else {
+                isActive = undefined; // no isActive filter for admins by default
+            }
+        }
 
         // Start with basic filter
         const filter = {};
 
-        // Only add isActive filter if it's explicitly set
-        if (req.query.hasOwnProperty('isActive')) {
+        if (typeof isActive === 'boolean') {
             filter.isActive = isActive;
         }
 
@@ -79,7 +134,7 @@ const getNotices = async (req, res) => {
         }
 
         // Only filter out expired notices if we're showing active notices
-        if (isActive) {
+        if (isActive === true) {
             // include notices that expire today (inclusive)
             const now = new Date();
             const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate()); // server local midnight

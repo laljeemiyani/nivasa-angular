@@ -29,22 +29,22 @@ export class CardComponent {
 
   get computedClass(): string {
     const variantClasses: Record<CardVariant, string> = {
-      default: 'bg-card text-text-primary',
-      primary: 'bg-primary-50 text-primary-900 border-primary-200',
-      secondary: 'bg-secondary-50 text-secondary-900 border-secondary-200',
+      default: 'bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100',
+      primary: 'bg-primary-50 dark:bg-primary-900/30 text-primary-900 dark:text-primary-300 border-primary-200 dark:border-primary-800',
+      secondary: 'bg-secondary-50 dark:bg-secondary-900/30 text-secondary-900 dark:text-secondary-300 border-secondary-200 dark:border-secondary-800',
       gradient:
         'bg-gradient-to-br from-primary-600 to-secondary-600 text-white',
-      dark: 'bg-gray-800 text-white',
+      dark: 'bg-slate-800 dark:bg-slate-900 text-white',
     };
 
     return cn(
-      'rounded-2xl shadow-card overflow-hidden transition-all duration-300',
+      'rounded-2xl shadow-card dark:shadow-card-dark overflow-hidden transition-all duration-300',
       variantClasses[this.variant],
       this.hover ? 'hover:shadow-card-hover hover:-translate-y-1' : '',
       this.glassmorphism
-        ? 'bg-white/70 backdrop-blur-md border border-white/20 shadow-xl'
+        ? 'bg-white/70 dark:bg-slate-800/70 backdrop-blur-md border border-white/20 dark:border-slate-700/50 shadow-xl'
         : '',
-      this.bordered ? 'border border-border' : '',
+      this.bordered ? 'border border-slate-200 dark:border-slate-700' : '',
       this.customClass,
     );
   }

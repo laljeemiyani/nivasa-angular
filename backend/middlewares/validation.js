@@ -74,11 +74,11 @@ const validateUserRegistration = [
         .matches(/^([1-9]|1[0-4])(0[1-4])$/)
         .withMessage('Flat number must be in format: 101-104, 201-204, ..., 1401-1404 (floors 1-14, flats 01-04)'),
     body('age')
-        .optional()
+        .optional({ checkFalsy: true })
         .isInt({min: 18, max: 120})
         .withMessage('Age must be between 18 and 120 years (only adults can register)'),
     body('gender')
-        .optional()
+        .optional({ checkFalsy: true })
         .isIn(['Male', 'Female', 'Other'])
         .withMessage('Gender must be Male, Female, or Other'),
     handleValidationErrors
@@ -173,12 +173,12 @@ const validateVehicle = [
 const validateNotice = [
     body('title')
         .trim()
-        .isLength({min: 5, max: 255})
-        .withMessage('Title must be between 5 and 255 characters'),
+        .isLength({min: 3, max: 255})
+        .withMessage('Title must be between 3 and 255 characters'),
     body('description')
         .trim()
-        .isLength({min: 10})
-        .withMessage('Description must be at least 10 characters long'),
+        .isLength({min: 5})
+        .withMessage('Description must be at least 5 characters long'),
     body('priority')
         .optional()
         .isIn(['low', 'medium', 'high'])
@@ -201,8 +201,9 @@ const validateComplaint = [
         .isLength({min: 10})
         .withMessage('Description must be at least 10 characters long'),
     body('category')
-        .isIn(['plumbing', 'electrical', 'security', 'maintenance', 'noise', 'parking', 'cleaning', 'other'])
-        .withMessage('Invalid complaint category'),
+        .trim()
+        .isLength({ min: 2, max: 50 })
+        .withMessage('Complaint category is required and must be between 2 and 50 characters'),
     body('priority')
         .optional()
         .isIn(['low', 'medium', 'high', 'urgent'])

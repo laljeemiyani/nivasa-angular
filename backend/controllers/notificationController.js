@@ -1,4 +1,5 @@
 const Notification = require('../models/Notification');
+const User = require('../models/User');
 
 // Create a new notification
 const createNotification = async (req, res) => {
@@ -43,6 +44,35 @@ const createNotificationInternal = async (notificationData) => {
   }
 };
 
+// Notify all admins (internal helper)
+const notifyAdmins = async ({ title, message, type, relatedModel, relatedId }) => {
+  try {
+    // Include admins where isDeleted is false or not set (legacy records)
+    const admins = await User.find({ role: 'admin', $or: [{ isDeleted: false }, { isDeleted: { $exists: false } }] });
+    if (!admins.length) {
+      console.warn('notifyAdmins: no admin users found; skipping notification.');
+      return;
+    }
+    const payload = {
+      title,
+      message,
+      type: type || 'info',
+      relatedModel: relatedModel || 'User',
+      relatedId: relatedId || null,
+      routingType: 'SYSTEM'
+    };
+    for (const admin of admins) {
+      try {
+        await createNotificationInternal({ ...payload, userId: admin._id });
+      } catch (err) {
+        console.error('Failed to create notification for admin', admin._id, err.message);
+      }
+    }
+  } catch (error) {
+    console.error('Failed to notify admins:', error);
+  }
+};
+
 // Get user notifications with pagination and filters
 const getUserNotifications = async (req, res) => {
   try {
@@ -50,11 +80,19 @@ const getUserNotifications = async (req, res) => {
     const page = parseInt(req.query.page) || 1;
     const limit = parseInt(req.query.limit) || 10;
     const isRead = req.query.isRead !== undefined ? req.query.isRead === 'true' : undefined;
-    
+    const type = req.query.type;
+    const relatedModel = req.query.relatedModel;
+
     const filter = { userId, isDeleted: false };
-    
+
     if (isRead !== undefined) {
       filter.isRead = isRead;
+    }
+    if (type) {
+      filter.type = type;
+    }
+    if (relatedModel) {
+      filter.relatedModel = relatedModel;
     }
 
     const notifications = await Notification.find(filter)
@@ -206,6 +244,7 @@ const getUnreadCount = async (req, res) => {
 module.exports = {
   createNotification,
   createNotificationInternal,
+  notifyAdmins,
   getUserNotifications,
   markNotificationAsRead,
   markAllNotificationsAsRead,

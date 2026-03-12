@@ -1,7 +1,8 @@
 const ParkingSlotRequest = require('../models/ParkingSlotRequest');
 const ParkingSlot = require('../models/ParkingSlot');
 const User = require('../models/User');
-const { createNotificationInternal } = require('./notificationController');
+const Vehicle = require('../models/Vehicle');
+const { createNotificationInternal, notifyAdmins } = require('./notificationController');
 
 // Resident: Create a parking slot request
 const createParkingRequest = async (req, res) => {
@@ -44,6 +45,18 @@ const createParkingRequest = async (req, res) => {
         });
 
         await request.save();
+
+        const userObj = await User.findById(userId);
+
+        // Notify admins about the new parking slot request
+        await notifyAdmins({
+            title: 'New Parking Slot Request',
+            message: `${userObj.fullName || 'A resident'} (Wing ${userObj.wing || 'N/A'} · Flat ${userObj.flatNumber || 'N/A'}) requested ${requestedSlots} additional parking slot(s).\n\nReason:\n${reason}`,
+            // Use a standard notification type so it appears clearly in admin UIs
+            type: 'warning',
+            relatedModel: 'ParkingSlotRequest',
+            relatedId: request._id
+        });
 
         res.status(201).json({
             success: true,
@@ -97,13 +110,52 @@ const getAllParkingRequests = async (req, res) => {
 
         const [requests, total] = await Promise.all([
             ParkingSlotRequest.find(filter)
-                .populate('userId', 'fullName email wing flatNumber profilePhotoUrl')
+                .populate('userId', 'fullName email wing flatNumber profilePhotoUrl parkingAllocation')
                 .populate('reviewedBy', 'fullName email')
                 .sort({ createdAt: -1 })
                 .skip(skip)
                 .limit(limit),
             ParkingSlotRequest.countDocuments(filter)
         ]);
+
+        // Enrich each request with current parking allocation & active vehicle count
+        const userIds = requests
+            .map(r => r.userId && r.userId._id)
+            .filter(Boolean);
+
+        let vehiclesByUser = {};
+        if (userIds.length > 0) {
+            const vehicleAgg = await Vehicle.aggregate([
+                {
+                    $match: {
+                        userId: { $in: userIds },
+                        isDeleted: { $ne: true }
+                    }
+                },
+                {
+                    $group: {
+                        _id: '$userId',
+                        count: { $sum: 1 }
+                    }
+                }
+            ]);
+            vehiclesByUser = vehicleAgg.reduce((acc, v) => {
+                acc[v._id.toString()] = v.count;
+                return acc;
+            }, {});
+        }
+
+        const requestsWithMeta = requests.map(req => {
+            const obj = req.toObject();
+            const uid = obj.userId?._id?.toString();
+            const allocation = obj.userId?.parkingAllocation ?? 2;
+            const activeVehicleCount = uid ? (vehiclesByUser[uid] || 0) : 0;
+            return {
+                ...obj,
+                parkingAllocation: allocation,
+                activeVehicleCount
+            };
+        });
 
         // Also get counts per status for dashboard
         const [pendingCount, approvedCount, rejectedCount] = await Promise.all([
@@ -114,8 +166,8 @@ const getAllParkingRequests = async (req, res) => {
 
         res.json({
             success: true,
-            data: {
-                requests,
+                data: {
+                    requests: requestsWithMeta,
                 stats: { pendingCount, approvedCount, rejectedCount },
                 pagination: {
                     page,

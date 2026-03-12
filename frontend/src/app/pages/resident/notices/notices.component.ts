@@ -58,6 +58,8 @@ export class ResidentNoticesComponent implements OnInit {
   categoryFilter = '';
   priorityFilter = '';
 
+  private searchDebounce: any = null;
+
   selectedNotice: any = null;
   isModalOpen = false;
 
@@ -100,6 +102,16 @@ export class ResidentNoticesComponent implements OnInit {
     if (e) e.preventDefault();
     this.currentPage = 1;
     this.fetchNotices();
+  }
+
+  onSearchInput() {
+    this.currentPage = 1;
+    if (this.searchDebounce) {
+      clearTimeout(this.searchDebounce);
+    }
+    this.searchDebounce = setTimeout(() => {
+      this.fetchNotices();
+    }, 300);
   }
 
   onFilterChange() {

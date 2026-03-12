@@ -2,7 +2,10 @@ import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { HttpClient } from '@angular/common/http';
+import { ActivatedRoute } from '@angular/router';
 import { environment } from '../../../../environments/environment';
+import { ToastService } from '../../../core/services/toast.service';
+import { ConfirmDialogService } from '../../../core/services/confirm-dialog.service';
 
 import {
   CardComponent,
@@ -69,6 +72,8 @@ export class ResidentComplaintsComponent implements OnInit {
   statusFilter = '';
   categoryFilter = '';
 
+  private searchDebounce: any = null;
+
   isModalOpen = false;
   isDeleteDialogOpen = false;
   selectedComplaint: any = null;
@@ -77,16 +82,67 @@ export class ResidentComplaintsComponent implements OnInit {
   formData = {
     title: '',
     description: '',
-    category: 'maintenance',
+    category: '',
   };
   attachment: File | null = null;
 
+  // Dynamic categories from admin settings
+  complaintCategories: Array<{name: string; order: number; isActive: boolean}> = [];
+
   apiUrl = environment.apiUrl;
 
-  constructor(private http: HttpClient) {}
+  constructor(
+    private http: HttpClient,
+    private toastService: ToastService,
+    private confirmDialogService: ConfirmDialogService,
+    private route: ActivatedRoute,
+  ) {}
 
   ngOnInit() {
+    // Pre-set filters based on query params (e.g. ?status=resolved)
+    const statusFromQuery = this.route.snapshot.queryParamMap.get('status');
+    if (statusFromQuery) {
+      this.statusFilter = statusFromQuery.toLowerCase();
+    }
+
+    this.fetchCategories();
     this.fetchComplaints();
+  }
+
+  // Fetch complaint categories from admin settings
+  fetchCategories() {
+    this.http.get<any>(`${this.apiUrl}/admin/settings/complaint-categories`)
+      .subscribe({
+        next: (response) => {
+          if (response.success) {
+            // Filter only active categories
+            this.complaintCategories = (response.data || [])
+              .filter((cat: any) => cat.isActive !== false)
+              .sort((a: any, b: any) => (a.order || 0) - (b.order || 0));
+            // Set default category if available
+            if (this.complaintCategories.length > 0 && !this.formData.category) {
+              this.formData.category = this.complaintCategories[0].name.toLowerCase();
+            }
+          }
+        },
+        error: (error) => {
+          console.error('Error fetching categories:', error);
+          // Fallback categories if API fails
+          this.complaintCategories = [
+            { name: 'Maintenance', order: 1, isActive: true },
+            { name: 'Security', order: 2, isActive: true },
+            { name: 'Cleanliness', order: 3, isActive: true },
+            { name: 'Noise', order: 4, isActive: true },
+            { name: 'Parking', order: 5, isActive: true },
+            { name: 'Plumbing', order: 6, isActive: true },
+            { name: 'Electrical', order: 7, isActive: true },
+            { name: 'Other', order: 8, isActive: true }
+          ];
+          if (!this.formData.category) {
+            this.formData.category = 'maintenance';
+          }
+        }
+      });
   }
 
   fetchComplaints() {
@@ -126,6 +182,16 @@ export class ResidentComplaintsComponent implements OnInit {
     this.fetchComplaints();
   }
 
+  onSearchInput() {
+    this.currentPage = 1;
+    if (this.searchDebounce) {
+      clearTimeout(this.searchDebounce);
+    }
+    this.searchDebounce = setTimeout(() => {
+      this.fetchComplaints();
+    }, 300);
+  }
+
   onFilterChange() {
     this.currentPage = 1;
     this.fetchComplaints();
@@ -139,7 +205,10 @@ export class ResidentComplaintsComponent implements OnInit {
 
   openCreateModal() {
     this.modalMode = 'create';
-    this.formData = { title: '', description: '', category: 'maintenance' };
+    const defaultCategory = this.complaintCategories.length > 0 
+      ? this.complaintCategories[0].name.toLowerCase() 
+      : 'maintenance';
+    this.formData = { title: '', description: '', category: defaultCategory };
     this.attachment = null;
     this.isModalOpen = true;
   }
@@ -186,7 +255,7 @@ export class ResidentComplaintsComponent implements OnInit {
 
   handleSubmit() {
     if (!this.formData.title.trim() || !this.formData.description.trim()) {
-      alert('Please fill out all required fields.');
+      this.toastService.warning('Validation Error', 'Please fill out all required fields.');
       return;
     }
 
@@ -203,10 +272,6 @@ export class ResidentComplaintsComponent implements OnInit {
         formData.append('description', this.formData.description);
         formData.append('category', this.formData.category);
         formData.append('complaintAttachment', this.attachment);
-        request = this.http.post(`${this.apiUrl}/complaints`, formData); // assuming different endpoint or handled in backend
-        // Wait, normally it's just the same endpoint and we use FormData if there is a file. Assuming backend supports multipart on the same or special route.
-        // from react: residentAPI.createComplaintWithAttachment
-        // Let's assume standard POST api/resident/complaints handles FormData
         request = this.http.post(`${this.apiUrl}/complaints`, formData);
       } else {
         request = this.http.post(`${this.apiUrl}/complaints`, this.formData);
@@ -214,13 +279,14 @@ export class ResidentComplaintsComponent implements OnInit {
 
       request.subscribe({
         next: () => {
+          this.toastService.success('Complaint Submitted', 'Your complaint has been submitted successfully.');
           this.closeModal();
           this.fetchComplaints();
           this.submitting = false;
         },
         error: (err) => {
           console.error(err);
-          alert(err.error?.message || 'Failed to submit complaint');
+          this.toastService.error('Error', err.error?.message || 'Failed to submit complaint');
           this.submitting = false;
         },
       });
@@ -232,30 +298,35 @@ export class ResidentComplaintsComponent implements OnInit {
         )
         .subscribe({
           next: () => {
+            this.toastService.success('Complaint Updated', 'Your complaint has been updated successfully.');
             this.closeModal();
             this.fetchComplaints();
             this.submitting = false;
           },
           error: (err) => {
             console.error(err);
-            alert(err.error?.message || 'Failed to update complaint');
+            this.toastService.error('Error', err.error?.message || 'Failed to update complaint');
             this.submitting = false;
           },
         });
     }
   }
 
-  handleDelete() {
+  async handleDelete() {
+    const confirmed = await this.confirmDialogService.confirmDelete('this complaint');
+    if (!confirmed) return;
+
     this.http
       .delete(`${this.apiUrl}/complaints/${this.selectedComplaint._id}`)
       .subscribe({
         next: () => {
+          this.toastService.success('Complaint Deleted', 'Your complaint has been deleted successfully.');
           this.closeDeleteDialog();
           this.fetchComplaints();
         },
         error: (err) => {
           console.error(err);
-          alert(err.error?.message || 'Failed to delete complaint');
+          this.toastService.error('Error', err.error?.message || 'Failed to delete complaint');
         },
       });
   }

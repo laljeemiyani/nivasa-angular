@@ -1,6 +1,6 @@
 const mongoose = require('mongoose');
 const bcrypt = require('bcryptjs');
-const {validateCommonEmail} = require('../utils/validators');
+const { validateCommonEmail } = require('../utils/validators');
 
 const userSchema = new mongoose.Schema({
     fullName: {
@@ -138,6 +138,17 @@ const userSchema = new mongoose.Schema({
         type: String,
         enum: ['manual', 'property_sale', 'tenant_move_out', 'system'],
         default: 'manual'
+    },
+    // Account status for soft deletion - data retained forever
+    accountStatus: {
+        type: String,
+        enum: ['active', 'inactive', 'suspended'],
+        default: 'active'
+    },
+    dataRetained: {
+        type: Boolean,
+        default: true,
+        immutable: true
     }
 }, {
     timestamps: true
@@ -145,9 +156,9 @@ const userSchema = new mongoose.Schema({
 
 // Index for better query performance
 // Email index is already created by the unique: true in the schema
-userSchema.index({status: 1});
-userSchema.index({role: 1});
-userSchema.index({isDeleted: 1});
+userSchema.index({ status: 1 });
+userSchema.index({ role: 1 });
+userSchema.index({ isDeleted: 1 });
 
 // Hash password before saving
 userSchema.pre('save', async function (next) {

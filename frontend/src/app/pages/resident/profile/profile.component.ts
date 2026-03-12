@@ -2,8 +2,10 @@ import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { HttpClient } from '@angular/common/http';
+import { Router } from '@angular/router';
 import { environment } from '../../../../environments/environment';
 import { AuthService } from '../../../core/services/auth.service';
+import { ToastService } from '../../../core/services/toast.service';
 
 import {
   CardComponent,
@@ -76,12 +78,19 @@ export class ProfileComponent implements OnInit {
   errors: any = {};
 
   passwordData = { currentPassword: '', newPassword: '', confirmPassword: '' };
+  emailData = { newEmail: '', confirmEmail: '', currentPassword: '' };
+
+  deletingAccount = false;
+  showDeleteModal = false;
+  deleteReason = '';
 
   private apiUrl = environment.apiUrl;
 
   constructor(
     private http: HttpClient,
     private authService: AuthService,
+    private toastService: ToastService,
+    private router: Router,
   ) {}
 
   ngOnInit() {
@@ -133,6 +142,7 @@ export class ProfileComponent implements OnInit {
       .subscribe({
         next: (response) => {
           if (response.success) {
+            this.toastService.success('Photo Updated', 'Your profile photo has been updated successfully.');
             this.profilePhoto = {
               preview: URL.createObjectURL(file),
               name: file.name,
@@ -149,7 +159,7 @@ export class ProfileComponent implements OnInit {
         },
         error: (error) => {
           console.error('Error uploading photo:', error);
-          alert(error.error?.message || 'Failed to upload photo');
+          this.toastService.error('Error', error.error?.message || 'Failed to upload photo');
           this.uploadingPhoto = false;
         },
       });
@@ -211,23 +221,24 @@ export class ProfileComponent implements OnInit {
     if (Object.keys(validationErrors).length > 0) return;
 
     this.saving = true;
-    this.http.put(`${this.apiUrl}/auth/profile`, this.formData).subscribe({
-      next: () => {
+    this.authService.updateProfile(this.formData).subscribe((result) => {
+      if (result.success) {
+        this.toastService.success(
+          'Profile Updated',
+          'Your profile has been updated successfully.',
+        );
         this.isEditing = false;
-        this.saving = false;
         this.fetchProfile();
-      },
-      error: (error) => {
-        console.error('Update failed:', error);
-        alert(error.error?.message || 'Update failed');
-        this.saving = false;
-      },
+      } else if (result.error) {
+        this.toastService.error('Error', result.error);
+      }
+      this.saving = false;
     });
   }
 
   handlePasswordUpdate() {
     if (this.passwordData.newPassword !== this.passwordData.confirmPassword) {
-      alert('New passwords do not match');
+      this.toastService.warning('Validation Error', 'New passwords do not match');
       return;
     }
 
@@ -239,7 +250,7 @@ export class ProfileComponent implements OnInit {
 
     this.http.put(`${this.apiUrl}/auth/change-password`, body).subscribe({
       next: () => {
-        alert('Password changed successfully');
+        this.toastService.success('Password Changed', 'Your password has been changed successfully.');
         this.passwordData = {
           currentPassword: '',
           newPassword: '',
@@ -249,10 +260,105 @@ export class ProfileComponent implements OnInit {
       },
       error: (error) => {
         console.error('Password change failed:', error);
-        alert(error.error?.message || 'Failed to change password');
+        this.toastService.error('Error', error.error?.message || 'Failed to change password');
         this.changingPassword = false;
       },
     });
+  }
+
+  handleEmailUpdate() {
+    if (
+      !this.emailData.newEmail.trim() ||
+      !this.emailData.confirmEmail.trim() ||
+      !this.emailData.currentPassword.trim()
+    ) {
+      this.toastService.warning(
+        'Validation Error',
+        'Please fill out all email fields.',
+      );
+      return;
+    }
+
+    if (this.emailData.newEmail !== this.emailData.confirmEmail) {
+      this.toastService.warning(
+        'Validation Error',
+        'Email addresses do not match',
+      );
+      return;
+    }
+
+    this.saving = true;
+    this.http
+      .put<any>(`${this.apiUrl}/auth/change-email`, this.emailData)
+      .subscribe({
+        next: (response) => {
+          this.toastService.success(
+            'Email Updated',
+            response.message || 'Your email has been updated successfully.',
+          );
+          // Refresh profile + auth user
+          this.fetchProfile();
+          this.authService.updateProfile({ email: this.emailData.newEmail }).subscribe();
+          this.emailData = { newEmail: '', confirmEmail: '', currentPassword: '' };
+          this.saving = false;
+        },
+        error: (error) => {
+          console.error('Email change failed:', error);
+          this.toastService.error(
+            'Error',
+            error.error?.message || 'Failed to change email',
+          );
+          this.saving = false;
+        },
+      });
+  }
+
+  openDeleteAccountModal() {
+    this.showDeleteModal = true;
+    this.deleteReason = '';
+  }
+
+  closeDeleteAccountModal() {
+    if (this.deletingAccount) return;
+    this.showDeleteModal = false;
+    this.deleteReason = '';
+  }
+
+  handleDeleteAccount() {
+    if (!this.deleteReason.trim()) {
+      this.toastService.warning(
+        'Confirmation Required',
+        'Please tell us briefly why you want to delete your account.',
+      );
+      return;
+    }
+
+    this.deletingAccount = true;
+    this.http
+      .delete<any>(`${this.apiUrl}/auth/delete-account`, {
+        body: { reason: this.deleteReason },
+      })
+      .subscribe({
+        next: (response) => {
+          this.toastService.success(
+            'Account Deleted',
+            response.message ||
+              'Your account has been permanently deleted. You will now be logged out.',
+          );
+          this.showDeleteModal = false;
+          this.authService.logout(false).subscribe(() => {
+            this.router.navigate(['/login']);
+          });
+        },
+        error: (error) => {
+          console.error('Delete account failed:', error);
+          this.toastService.error(
+            'Error',
+            error.error?.message || 'Failed to delete account',
+          );
+          this.deletingAccount = false;
+        },
+      });
   }
 
   togglePasswordVisibility(field: 'current' | 'new' | 'confirm') {

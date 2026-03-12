@@ -1,4 +1,5 @@
 const Complaint = require('../models/Complaint');
+const { notifyAdmins } = require('./notificationController');
 
 // Create new complaint
 const createComplaint = async (req, res) => {
@@ -23,10 +24,18 @@ const createComplaint = async (req, res) => {
         const populatedComplaint = await Complaint.findById(complaint._id)
             .populate('userId', 'fullName email wing flatNumber');
 
+        await notifyAdmins({
+            title: 'New Complaint Filed',
+            message: `A new ${priority || 'medium'} priority complaint "${title}" was filed by ${populatedComplaint.userId.fullName}.`,
+            type: 'warning',
+            relatedModel: 'Complaint',
+            relatedId: complaint._id
+        });
+
         res.status(201).json({
             success: true,
             message: 'Complaint submitted successfully',
-            data: {complaint: populatedComplaint}
+            data: { complaint: populatedComplaint }
         });
     } catch (error) {
         console.error('Create complaint error:', error);
@@ -46,7 +55,7 @@ const getUserComplaints = async (req, res) => {
         const status = req.query.status;
         const category = req.query.category;
 
-        const filter = {userId: req.user._id};
+        const filter = { userId: req.user._id, isDeleted: false };
 
         if (status) {
             filter.status = status;
@@ -58,7 +67,7 @@ const getUserComplaints = async (req, res) => {
 
         const complaints = await Complaint.find(filter)
             .populate('adminId', 'fullName')
-            .sort({createdAt: -1})
+            .sort({ createdAt: -1 })
             .skip((page - 1) * limit)
             .limit(limit);
 
@@ -89,7 +98,7 @@ const getUserComplaints = async (req, res) => {
 // Get single complaint
 const getComplaint = async (req, res) => {
     try {
-        const {complaintId} = req.params;
+        const { complaintId } = req.params;
 
         const complaint = await Complaint.findById(complaintId)
             .populate('userId', 'fullName email wing flatNumber')
@@ -112,7 +121,7 @@ const getComplaint = async (req, res) => {
 
         res.json({
             success: true,
-            data: {complaint}
+            data: { complaint }
         });
     } catch (error) {
         console.error('Get complaint error:', error);
@@ -127,8 +136,8 @@ const getComplaint = async (req, res) => {
 // Update complaint (User can only update their own pending complaints)
 const updateComplaint = async (req, res) => {
     try {
-        const {complaintId} = req.params;
-        const {title, description, category, priority} = req.body;
+        const { complaintId } = req.params;
+        const { title, description, category, priority } = req.body;
 
         const complaint = await Complaint.findById(complaintId);
 
@@ -164,13 +173,13 @@ const updateComplaint = async (req, res) => {
         const updatedComplaint = await Complaint.findByIdAndUpdate(
             complaintId,
             updateData,
-            {new: true, runValidators: true}
+            { new: true, runValidators: true }
         ).populate('userId', 'fullName email wing flatNumber');
 
         res.json({
             success: true,
             message: 'Complaint updated successfully',
-            data: {complaint: updatedComplaint}
+            data: { complaint: updatedComplaint }
         });
     } catch (error) {
         console.error('Update complaint error:', error);
@@ -185,7 +194,7 @@ const updateComplaint = async (req, res) => {
 // Delete complaint (User can only delete their own pending complaints)
 const deleteComplaint = async (req, res) => {
     try {
-        const {complaintId} = req.params;
+        const { complaintId } = req.params;
 
         const complaint = await Complaint.findById(complaintId);
 
@@ -240,14 +249,14 @@ const getComplaintStats = async (req, res) => {
             complaintsByPriority
         ] = await Promise.all([
             Complaint.countDocuments(),
-            Complaint.countDocuments({status: 'pending'}),
-            Complaint.countDocuments({status: 'in_progress'}),
-            Complaint.countDocuments({status: 'resolved'}),
+            Complaint.countDocuments({ status: 'pending' }),
+            Complaint.countDocuments({ status: 'in_progress' }),
+            Complaint.countDocuments({ status: 'resolved' }),
             Complaint.aggregate([
-                {$group: {_id: '$category', count: {$sum: 1}}}
+                { $group: { _id: '$category', count: { $sum: 1 } } }
             ]),
             Complaint.aggregate([
-                {$group: {_id: '$priority', count: {$sum: 1}}}
+                { $group: { _id: '$priority', count: { $sum: 1 } } }
             ])
         ]);
 
@@ -283,13 +292,13 @@ const getAllComplaints = async (req, res) => {
             Complaint.find()
                 .skip(skip)
                 .limit(limit)
-                .sort({createdAt: -1}),
+                .sort({ createdAt: -1 }),
             Complaint.countDocuments()
         ]);
 
         res.json({
             success: true,
-            data: {complaints},
+            data: { complaints },
             pagination: {
                 page,
                 limit,

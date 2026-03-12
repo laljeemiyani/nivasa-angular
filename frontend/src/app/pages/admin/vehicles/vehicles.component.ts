@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { HttpClient } from '@angular/common/http';
 import { environment } from '../../../../environments/environment';
+import { ToastService } from '../../../core/services/toast.service';
 
 import { BadgeComponent } from '../../../shared/components/ui/badge/badge.component';
 import {
@@ -48,6 +49,7 @@ import {
 export class AdminVehiclesComponent implements OnInit {
   vehicles: any[] = [];
   loading = false;
+
   page = 1;
   totalPages = 1;
 
@@ -64,7 +66,10 @@ export class AdminVehiclesComponent implements OnInit {
 
   private apiUrl = environment.apiUrl;
 
-  constructor(private http: HttpClient) {}
+  constructor(
+    private http: HttpClient,
+    private toast: ToastService,
+  ) {}
 
   ngOnInit() {
     this.fetchVehicles();
@@ -148,13 +153,14 @@ export class AdminVehiclesComponent implements OnInit {
           if (index !== -1) {
             this.vehicles[index].status = status;
           }
-
+          this.toast.success(`Vehicle ${status === 'approved' ? 'approved' : 'rejected'}`);
           this.closeStatusDialog();
           this.processingStatus = false;
         },
         error: (error) => {
           console.error('Failed to update vehicle status:', error);
           this.processingStatus = false;
+          this.toast.error('Failed to update vehicle status', error.error?.message || 'Please try again.');
         },
       });
   }

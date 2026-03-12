@@ -1,24 +1,24 @@
 <div class="space-y-6">
   <div class="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-4">
     <div class="flex-1">
-      <h1 class="text-2xl font-bold text-gray-900">Parking Slot Requests</h1>
-      <p class="text-gray-600 mt-1">Review and manage resident parking slot requests</p>
+      <h1 class="text-2xl font-bold text-slate-900 dark:text-slate-100">Parking Slot Requests</h1>
+      <p class="text-slate-500 dark:text-slate-400 mt-1">Review and manage resident parking slot requests</p>
     </div>
   </div>
 
   <!-- Stats cards -->
   <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
-    <div class="bg-amber-50 border border-amber-200 rounded-lg p-4 text-center">
-      <p class="text-2xl font-bold text-amber-700">{{ stats.pendingCount }}</p>
-      <p class="text-sm text-amber-600">Pending</p>
+    <div class="bg-amber-500/10 border border-amber-500/30 rounded-lg p-4 text-center">
+      <p class="text-2xl font-bold text-amber-400">{{ stats.pendingCount }}</p>
+      <p class="text-sm text-amber-300">Pending</p>
     </div>
-    <div class="bg-green-50 border border-green-200 rounded-lg p-4 text-center">
-      <p class="text-2xl font-bold text-green-700">{{ stats.approvedCount }}</p>
-      <p class="text-sm text-green-600">Approved</p>
+    <div class="bg-green-500/10 border border-green-500/30 rounded-lg p-4 text-center">
+      <p class="text-2xl font-bold text-green-400">{{ stats.approvedCount }}</p>
+      <p class="text-sm text-green-300">Approved</p>
     </div>
-    <div class="bg-red-50 border border-red-200 rounded-lg p-4 text-center">
-      <p class="text-2xl font-bold text-red-700">{{ stats.rejectedCount }}</p>
-      <p class="text-sm text-red-600">Rejected</p>
+    <div class="bg-red-500/10 border border-red-500/30 rounded-lg p-4 text-center">
+      <p class="text-2xl font-bold text-red-400">{{ stats.rejectedCount }}</p>
+      <p class="text-sm text-red-300">Rejected</p>
     </div>
   </div>
 
@@ -29,7 +29,7 @@
           <app-card-title>All Requests</app-card-title>
           <app-card-description>{{ total }} total request(s)</app-card-description>
         </div>
-        <select [(ngModel)]="statusFilter" (ngModelChange)="onStatusFilterChange()" class="px-3 py-2 border border-gray-300 rounded-md text-sm focus:ring-2 focus:ring-primary-500 w-auto">
+        <select [(ngModel)]="statusFilter" (ngModelChange)="onStatusFilterChange()" class="px-3 py-2 border border-slate-300 dark:border-slate-600 bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-slate-100 rounded-md text-sm focus:ring-2 focus:ring-primary-500 w-auto">
           <option value="">All Statuses</option>
           <option value="pending">Pending</option>
           <option value="approved">Approved</option>
@@ -39,44 +39,60 @@
     </app-card-header>
     <app-card-content>
       <div *ngIf="loading" class="flex justify-center items-center h-48">
-        <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600"></div>
+        <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-500"></div>
       </div>
 
       <div *ngIf="!loading && requests.length === 0" class="flex flex-col items-center justify-center h-48 text-center">
-        <p class="text-gray-500">No parking slot requests found.</p>
+        <p class="text-slate-500 dark:text-slate-400">No parking slot requests found.</p>
       </div>
 
       <div *ngIf="!loading && requests.length > 0" class="space-y-4">
-        <div *ngFor="let req of requests" class="border rounded-lg p-5 bg-white hover:bg-gray-50 transition-colors">
+        <div *ngFor="let req of requests" class="border border-slate-200 dark:border-slate-700 rounded-lg p-5 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors">
           <div class="flex flex-col md:flex-row md:justify-between items-start gap-4">
             <div class="flex-1 min-w-0">
               <div class="flex flex-wrap items-center gap-2 mb-2">
-                <h3 class="font-semibold text-gray-900">{{ req.userId?.fullName || 'Unknown User' }}</h3>
+                <h3 class="font-semibold text-slate-900 dark:text-slate-100">{{ req.userId?.fullName || 'Unknown User' }}</h3>
                 <app-badge [variant]="getStatusColor(req.status)" class="capitalize">{{ req.status }}</app-badge>
               </div>
-              <div class="grid grid-cols-1 sm:grid-cols-2 gap-y-1 gap-x-6 text-sm text-gray-600 mb-3">
-                <div><span class="font-medium text-gray-700">Email:</span> {{ req.userId?.email || 'N/A' }}</div>
-                <div><span class="font-medium text-gray-700">Wing/Flat:</span> {{ req.userId?.wing || 'N/A' }}-{{ req.userId?.flatNumber || 'N/A' }}</div>
-                <div><span class="font-medium text-gray-700">Slots Requested:</span> {{ req.requestedSlots }}</div>
-                <div><span class="font-medium text-gray-700">Submitted:</span> {{ req.createdAt | date:'medium' }}</div>
+              <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-y-1 gap-x-6 text-sm text-slate-500 dark:text-slate-400 mb-3">
+                <div>
+                  <span class="font-medium text-slate-900 dark:text-slate-100">Email:</span>
+                  {{ req.userId?.email || 'N/A' }}
+                </div>
+                <div>
+                  <span class="font-medium text-slate-900 dark:text-slate-100">Wing/Flat:</span>
+                  {{ req.userId?.wing || 'N/A' }}-{{ req.userId?.flatNumber || 'N/A' }}
+                </div>
+                <div>
+                  <span class="font-medium text-slate-900 dark:text-slate-100">Current Parking:</span>
+                  {{ req.activeVehicleCount || 0 }} / {{ req.parkingAllocation || 2 }} slot(s)
+                </div>
+                <div>
+                  <span class="font-medium text-slate-900 dark:text-slate-100">Slots Requested:</span>
+                  {{ req.requestedSlots }}
+                </div>
+                <div>
+                  <span class="font-medium text-slate-900 dark:text-slate-100">Submitted:</span>
+                  {{ req.createdAt | date:'medium' }}
+                </div>
               </div>
-              <div class="bg-gray-50 border border-gray-200 rounded p-3 mb-2">
-                <p class="text-sm text-gray-700"><span class="font-medium">Reason:</span> {{ req.reason }}</p>
+              <div class="bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded p-3 mb-2">
+                <p class="text-sm text-slate-500 dark:text-slate-400"><span class="font-medium text-slate-900 dark:text-slate-100">Reason:</span> {{ req.reason }}</p>
               </div>
-              <div *ngIf="req.status === 'rejected' && req.rejectionReason" class="bg-red-50 border border-red-200 rounded p-3 mb-2">
-                <p class="text-sm text-red-700"><span class="font-medium">Rejection Reason:</span> {{ req.rejectionReason }}</p>
+              <div *ngIf="req.status === 'rejected' && req.rejectionReason" class="bg-red-500/10 border border-red-500/30 rounded p-3 mb-2">
+                <p class="text-sm text-red-300"><span class="font-medium">Rejection Reason:</span> {{ req.rejectionReason }}</p>
               </div>
-              <div *ngIf="req.status === 'approved' && req.adminNote" class="bg-green-50 border border-green-200 rounded p-3 mb-2">
-                <p class="text-sm text-green-700"><span class="font-medium">Admin Note:</span> {{ req.adminNote }}</p>
+              <div *ngIf="req.status === 'approved' && req.adminNote" class="bg-green-500/10 border border-green-500/30 rounded p-3 mb-2">
+                <p class="text-sm text-green-300"><span class="font-medium">Admin Note:</span> {{ req.adminNote }}</p>
               </div>
-              <p *ngIf="req.reviewedAt" class="text-xs text-gray-400">Reviewed: {{ req.reviewedAt | date:'medium' }} by {{ req.reviewedBy?.fullName || 'Admin' }}</p>
+              <p *ngIf="req.reviewedAt" class="text-xs text-slate-500 dark:text-slate-500">Reviewed: {{ req.reviewedAt | date:'medium' }} by {{ req.reviewedBy?.fullName || 'Admin' }}</p>
             </div>
 
-            <div *ngIf="req.status === 'pending'" class="flex items-center gap-2 w-full md:w-auto pt-3 md:pt-0 mt-2 md:mt-0 border-t md:border-0 border-gray-100">
-              <button (click)="openReviewModal(req, 'approve')" class="flex-1 md:flex-none px-4 py-2 text-sm font-medium text-green-700 bg-green-50 hover:bg-green-100 rounded-md transition-colors">
+            <div *ngIf="req.status === 'pending'" class="flex items-center gap-2 w-full md:w-auto pt-3 md:pt-0 mt-2 md:mt-0 border-t md:border-0 border-slate-200 dark:border-slate-700">
+              <button (click)="openReviewModal(req, 'approve')" class="flex-1 md:flex-none px-4 py-2 text-sm font-medium text-green-400 bg-green-500/10 hover:bg-green-500/20 border border-green-500/30 rounded-md transition-colors">
                 Approve
               </button>
-              <button (click)="openReviewModal(req, 'reject')" class="flex-1 md:flex-none px-4 py-2 text-sm font-medium text-red-700 bg-red-50 hover:bg-red-100 rounded-md transition-colors">
+              <button (click)="openReviewModal(req, 'reject')" class="flex-1 md:flex-none px-4 py-2 text-sm font-medium text-red-400 bg-red-500/10 hover:bg-red-500/20 border border-red-500/30 rounded-md transition-colors">
                 Reject
               </button>
             </div>
@@ -85,10 +101,10 @@
       </div>
 
       <!-- Pagination -->
-      <div *ngIf="totalPages > 1" class="flex justify-center gap-2 pt-4 mt-4 border-t border-gray-200">
-        <button (click)="goToPage(currentPage - 1)" [disabled]="currentPage === 1" class="px-3 py-1.5 text-sm border rounded-md disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50">Previous</button>
-        <span class="px-3 py-1.5 text-sm text-gray-600">Page {{ currentPage }} of {{ totalPages }}</span>
-        <button (click)="goToPage(currentPage + 1)" [disabled]="currentPage === totalPages" class="px-3 py-1.5 text-sm border rounded-md disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50">Next</button>
+      <div *ngIf="totalPages > 1" class="flex justify-center gap-2 pt-4 mt-4 border-t border-slate-200 dark:border-slate-700">
+        <button (click)="goToPage(currentPage - 1)" [disabled]="currentPage === 1" class="px-3 py-1.5 text-sm border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 rounded-md disabled:opacity-50 disabled:cursor-not-allowed hover:bg-slate-50 dark:hover:bg-slate-700">Previous</button>
+        <span class="px-3 py-1.5 text-sm text-slate-500 dark:text-slate-400">Page {{ currentPage }} of {{ totalPages }}</span>
+        <button (click)="goToPage(currentPage + 1)" [disabled]="currentPage === totalPages" class="px-3 py-1.5 text-sm border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 rounded-md disabled:opacity-50 disabled:cursor-not-allowed hover:bg-slate-50 dark:hover:bg-slate-700">Next</button>
       </div>
     </app-card-content>
   </app-card>
@@ -97,24 +113,24 @@
   <app-modal *ngIf="isReviewModalOpen" [isOpen]="isReviewModalOpen" (close)="closeReviewModal()" size="md">
     <app-modal-header>
       <app-modal-title>{{ reviewAction === 'approve' ? 'Approve' : 'Reject' }} Request</app-modal-title>
-      <button class="absolute top-4 right-4 text-gray-400 hover:text-gray-600" (click)="closeReviewModal()"><app-icon-x customClass="h-5 w-5"></app-icon-x></button>
+      <button class="absolute top-4 right-4 text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:text-slate-100" (click)="closeReviewModal()"><app-icon-x customClass="h-5 w-5"></app-icon-x></button>
     </app-modal-header>
     <app-modal-body>
       <div class="space-y-4">
-        <div class="bg-gray-50 rounded-lg p-4">
-          <p class="text-sm text-gray-700"><span class="font-medium">Resident:</span> {{ selectedRequest?.userId?.fullName }}</p>
-          <p class="text-sm text-gray-700"><span class="font-medium">Slots Requested:</span> {{ selectedRequest?.requestedSlots }}</p>
-          <p class="text-sm text-gray-700"><span class="font-medium">Reason:</span> {{ selectedRequest?.reason }}</p>
+        <div class="bg-slate-50 dark:bg-slate-900 rounded-lg p-4 border border-slate-200 dark:border-slate-700">
+          <p class="text-sm text-slate-500 dark:text-slate-400"><span class="font-medium text-slate-900 dark:text-slate-100">Resident:</span> {{ selectedRequest?.userId?.fullName }}</p>
+          <p class="text-sm text-slate-500 dark:text-slate-400"><span class="font-medium text-slate-900 dark:text-slate-100">Slots Requested:</span> {{ selectedRequest?.requestedSlots }}</p>
+          <p class="text-sm text-slate-500 dark:text-slate-400"><span class="font-medium text-slate-900 dark:text-slate-100">Reason:</span> {{ selectedRequest?.reason }}</p>
         </div>
 
         <div *ngIf="reviewAction === 'reject'" class="space-y-2">
-          <label class="text-sm font-medium text-red-700">Rejection Reason *</label>
-          <textarea [(ngModel)]="rejectionReason" name="rejectionReason" rows="3" placeholder="Provide a reason for rejection..." class="w-full px-3 py-2 border border-red-300 rounded-md focus:ring-2 focus:ring-red-500 resize-none"></textarea>
+          <label class="text-sm font-medium text-red-400">Rejection Reason *</label>
+          <textarea [(ngModel)]="rejectionReason" name="rejectionReason" rows="3" placeholder="Provide a reason for rejection..." class="w-full px-3 py-2 bg-slate-100 dark:bg-slate-800 border border-red-500/50 text-slate-900 dark:text-slate-100 rounded-md focus:ring-2 focus:ring-red-500 resize-none placeholder:text-slate-500 dark:text-slate-500"></textarea>
         </div>
 
         <div class="space-y-2">
-          <label class="text-sm font-medium text-gray-700">Admin Note (optional)</label>
-          <textarea [(ngModel)]="adminNote" name="adminNote" rows="2" placeholder="Add an optional note..." class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-primary-500 resize-none"></textarea>
+          <label class="text-sm font-medium text-slate-900 dark:text-slate-100">Admin Note (optional)</label>
+          <textarea [(ngModel)]="adminNote" name="adminNote" rows="2" placeholder="Add an optional note..." class="w-full px-3 py-2 bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-600 text-slate-900 dark:text-slate-100 rounded-md focus:ring-2 focus:ring-primary-500 resize-none placeholder:text-slate-500 dark:text-slate-500"></textarea>
         </div>
       </div>
     </app-modal-body>
@@ -123,7 +139,7 @@
         <div *ngIf="submitting" class="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
         {{ reviewAction === 'approve' ? 'Approve' : 'Reject' }}
       </button>
-      <button (click)="closeReviewModal()" class="px-5 py-2.5 bg-gray-100 text-gray-700 font-medium rounded-lg hover:bg-gray-200 border border-transparent">Cancel</button>
+      <button (click)="closeReviewModal()" class="px-5 py-2.5 bg-slate-200 dark:bg-slate-700 text-slate-900 dark:text-slate-100 font-medium rounded-lg hover:bg-slate-300 dark:hover:bg-slate-600 border border-slate-300 dark:border-slate-600">Cancel</button>
     </app-modal-footer>
   </app-modal>
 </div>

@@ -3,6 +3,8 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { HttpClient } from '@angular/common/http';
 import { environment } from '../../../../environments/environment';
+import { ToastService } from '../../../core/services/toast.service';
+import { ConfirmDialogService } from '../../../core/services/confirm-dialog.service';
 
 import {
   CardComponent,
@@ -71,7 +73,11 @@ export class AdminNoticesComponent implements OnInit {
   private apiUrl = environment.apiUrl;
   currentDate = new Date().toISOString().split('T')[0];
 
-  constructor(private http: HttpClient) {}
+  constructor(
+    private http: HttpClient,
+    private toastService: ToastService,
+    private confirmDialogService: ConfirmDialogService,
+  ) {}
 
   ngOnInit() {
     this.fetchNotices();
@@ -156,7 +162,7 @@ export class AdminNoticesComponent implements OnInit {
 
   handleSubmit() {
     if (!this.formData.title.trim() || !this.formData.description.trim()) {
-      alert('Please fill in all required fields');
+      this.toastService.warning('Validation Error', 'Please fill in all required fields');
       return;
     }
 
@@ -173,26 +179,50 @@ export class AdminNoticesComponent implements OnInit {
 
     request.subscribe({
       next: () => {
+        this.toastService.success(
+          this.modalMode === 'create' ? 'Notice Created' : 'Notice Updated',
+          this.modalMode === 'create' 
+            ? 'The notice has been created successfully.' 
+            : 'The notice has been updated successfully.'
+        );
         this.fetchNotices();
         this.closeModal();
         this.actionLoading = false;
       },
       error: (error) => {
         console.error(`Failed to ${this.modalMode} notice:`, error);
+
+        const backendErrors = error?.error?.errors;
+        let details = '';
+        if (Array.isArray(backendErrors) && backendErrors.length > 0) {
+          // Combine all field messages into a single readable line
+          details = backendErrors
+            .map((e: any) => e.msg)
+            .filter((msg: any) => !!msg)
+            .join(' • ');
+        }
+
+        this.toastService.error(
+          'Validation Error',
+          details || error.error?.message || `Failed to ${this.modalMode} notice`
+        );
         this.actionLoading = false;
       },
     });
   }
 
-  handleDelete(noticeId: string) {
-    if (!confirm('Are you sure you want to delete this notice?')) return;
+  async handleDelete(noticeId: string) {
+    const confirmed = await this.confirmDialogService.confirmDelete('this notice');
+    if (!confirmed) return;
 
     this.http.delete(`${this.apiUrl}/notices/admin/${noticeId}`).subscribe({
       next: () => {
+        this.toastService.success('Notice Deleted', 'The notice has been deleted successfully.');
         this.fetchNotices();
       },
       error: (error) => {
         console.error('Failed to delete notice:', error);
+        this.toastService.error('Error', error.error?.message || 'Failed to delete notice');
       },
     });
   }

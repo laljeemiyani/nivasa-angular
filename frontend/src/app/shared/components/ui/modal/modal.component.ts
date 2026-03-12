@@ -27,22 +27,22 @@ export type ModalSize =
   template: `
     <div
       *ngIf="isOpen"
-      class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4 overflow-y-auto"
+      class="fixed inset-0 z-[70] flex items-center justify-center bg-slate-900/50 dark:bg-black/70 backdrop-blur-sm p-4 overflow-y-auto"
       (click)="onBackdropClick($event)"
     >
       <div
-        class="relative w-full rounded-lg bg-white p-6 shadow-xl max-h-full overflow-y-auto animate-in fade-in-0 zoom-in-95 duration-300"
+        class="relative w-full rounded-2xl bg-white dark:bg-slate-800 p-6 shadow-2xl max-h-full overflow-y-auto animate-in fade-in-0 zoom-in-95 duration-300 border border-slate-200 dark:border-slate-700"
         [class]="computedSizeClass"
       >
         <!-- Optional default close button if closeButton is true, otherwise rely on content -->
         <button
           *ngIf="closeButton"
-          class="absolute right-4 top-4 rounded-sm opacity-70 transition-opacity hover:opacity-100"
+          class="absolute right-4 top-4 rounded-sm opacity-70 transition-opacity hover:opacity-100 text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200"
           (click)="onClose.emit()"
         >
           <svg
             xmlns="http://www.w3.org/2000/svg"
-            class="h-4 w-4"
+            class="h-5 w-5"
             viewBox="0 0 24 24"
             fill="none"
             stroke="currentColor"
@@ -140,7 +140,7 @@ export class ModalTitleComponent {
   @Input() customClass = '';
   get computedClass(): string {
     return cn(
-      'text-xl font-semibold leading-none tracking-tight',
+      'text-xl font-semibold leading-none tracking-tight text-slate-900 dark:text-white',
       this.customClass,
     );
   }
@@ -154,7 +154,7 @@ export class ModalTitleComponent {
 export class ModalDescriptionComponent {
   @Input() customClass = '';
   get computedClass(): string {
-    return cn('text-sm text-gray-500', this.customClass);
+    return cn('text-sm text-slate-500 dark:text-slate-400', this.customClass);
   }
 }
 
@@ -181,6 +181,6 @@ export class ModalFooterComponent {
 export class ModalBodyComponent {
   @Input() customClass = '';
   get computedClass(): string {
-    return cn('py-4', this.customClass);
+    return cn('py-4 text-slate-700 dark:text-slate-300', this.customClass);
   }
 }
