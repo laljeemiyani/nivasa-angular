@@ -1,4 +1,5 @@
 const User = require('../models/User');
+const ActiveSession = require('../models/ActiveSession');
 const jwt = require('jsonwebtoken');
 const config = require('../config/config');
 
@@ -25,22 +26,47 @@ const authenticateToken = async (req, res, next) => {
             });
         }
 
-        const tokenVersion = decoded.sessionVersion ?? 0;
-
-        if (user.isDeleted) {
+        if (user.isDeleted || user.status === 'deleted') {
             return res.status(410).json({
                 success: false,
-                message: 'Account deleted. Please contact the admin.',
+                message: 'Your account has been deleted. Please contact the admin for assistance.',
                 code: 'ACCOUNT_DELETED'
             });
         }
 
-        if (tokenVersion !== (user.sessionVersion || 0)) {
-            return res.status(401).json({
+        const tokenVersion = decoded.sessionVersion ?? 0;
+        const currentSessionVersion = user.sessionVersion || 0;
+
+        if (user.accountStatus === 'inactive') {
+            return res.status(410).json({
                 success: false,
-                message: 'Session invalidated. Please log in again.',
-                code: 'SESSION_INVALIDATED'
+                message: 'Account inactive. Please contact the admin.',
+                code: 'ACCOUNT_INACTIVE'
             });
+        }
+        
+        if (user.accountStatus === 'suspended') {
+            return res.status(403).json({
+                success: false,
+                message: 'Account suspended. Please contact the admin.',
+                code: 'ACCOUNT_SUSPENDED'
+            });
+        }
+
+        if (tokenVersion !== currentSessionVersion) {
+            const activeSession = await ActiveSession.exists({
+                userId: user._id,
+                sessionToken: token,
+                isActive: true
+            });
+
+            if (!activeSession) {
+                return res.status(401).json({
+                    success: false,
+                    message: 'Session invalidated. Please log in again.',
+                    code: 'SESSION_INVALIDATED'
+                });
+            }
         }
 
 
@@ -54,6 +80,7 @@ const authenticateToken = async (req, res, next) => {
         }
 
         req.user = user;
+        req.token = token;
         next();
     } catch (error) {
         if (error.name === 'JsonWebTokenError') {
@@ -106,10 +133,22 @@ const optionalAuth = async (req, res, next) => {
         if (token) {
             const decoded = jwt.verify(token, config.JWT_SECRET);
             const user = await User.findById(decoded.userId).select('-password');
+            const tokenVersion = decoded.sessionVersion ?? 0;
+            const currentSessionVersion = user?.sessionVersion || 0;
+            let sessionIsValid = tokenVersion === currentSessionVersion;
+
+            if (!sessionIsValid && user) {
+                sessionIsValid = Boolean(await ActiveSession.exists({
+                    userId: user._id,
+                    sessionToken: token,
+                    isActive: true
+                }));
+            }
+
             if (
                 user &&
-                !user.isDeleted &&
-                (decoded.sessionVersion ?? 0) === (user.sessionVersion || 0) &&
+                user.accountStatus === 'active' &&
+                sessionIsValid &&
                 user.status === 'approved'
             ) {
                 req.user = user;

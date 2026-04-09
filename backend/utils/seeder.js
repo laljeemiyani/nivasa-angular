@@ -10,8 +10,33 @@ const seedDatabase = async () => {
     try {
         console.log('🌱 Seeding database...');
 
-        // 1. Cleanup Old Test Data
-        const demoEmails = ['owner@nivasa.com', 'tenant@nivasa.com', 'resident@nivasa.com', 'admin@nivasa.com'];
+        // Always ensure admin exists
+        let admin = await User.findOne({email: config.ADMIN_EMAIL});
+        if (!admin) {
+            admin = await User.create({
+                fullName: 'System Admin',
+                email: config.ADMIN_EMAIL,
+                password: config.ADMIN_PASSWORD,
+                phoneNumber: '9999999999',
+                role: 'admin',
+                status: 'approved',
+                residentType: 'Owner',
+                wing: 'A',
+                flatNumber: '101',
+                age: 30
+            });
+            console.log(`✅ Admin user created: ${config.ADMIN_EMAIL}`);
+        }
+
+        // Demo/sample data is opt-in only.
+        const shouldSeedDemoData = process.env.SEED_DEMO_DATA === 'true';
+        if (!shouldSeedDemoData) {
+            console.log('ℹ️ SEED_DEMO_DATA is not true. Skipping demo data creation.');
+            return;
+        }
+
+        // 1. Cleanup old demo/test data
+        const demoEmails = ['owner@nivasa.com', 'tenant@nivasa.com', 'resident@nivasa.com'];
         const existingDemoUsers = await User.find({
             $or: [
                 {email: {$regex: /^(demo_test_|test_)/}},
@@ -30,24 +55,6 @@ const seedDatabase = async () => {
         }
 
         console.log('🧹 Cleaned up old demo/test data');
-
-        // 2. Create Admin
-        let admin = await User.findOne({email: config.ADMIN_EMAIL});
-        if (!admin) {
-            admin = await User.create({
-                fullName: 'System Admin',
-                email: config.ADMIN_EMAIL,
-                password: config.ADMIN_PASSWORD,
-                phoneNumber: '9999999999',
-                role: 'admin',
-                status: 'approved',
-                residentType: 'Owner',
-                wing: 'A',
-                flatNumber: '101',
-                age: 30
-            });
-            console.log(`✅ Admin user created: ${config.ADMIN_EMAIL}`);
-        }
 
         // 3. Create Residents
         const residentsData = [

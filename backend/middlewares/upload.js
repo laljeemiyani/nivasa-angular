@@ -51,7 +51,8 @@ const storage = multer.diskStorage({
     let uploadPath = './uploads';
     
     // Determine upload path based on field name or custom logic
-    if (file.fieldname === 'profilePhoto') {
+    // 'profilePhoto' = resident auth, 'photo' = admin profile photo
+    if (file.fieldname === 'profilePhoto' || file.fieldname === 'photo') {
       uploadPath = './uploads/profile_photos';
     } else if (file.fieldname === 'document') {
       uploadPath = './uploads/documents';

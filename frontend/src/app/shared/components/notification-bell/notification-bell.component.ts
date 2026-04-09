@@ -144,6 +144,7 @@ export class NotificationBellComponent implements OnInit, OnDestroy {
   userRole: string | null = null;
 
   private pollingSub?: Subscription;
+  private authStateSub?: Subscription;
 
   constructor(
     private notificationService: NotificationService,
@@ -152,7 +153,7 @@ export class NotificationBellComponent implements OnInit, OnDestroy {
   ) {}
 
   ngOnInit() {
-    this.authService.state$.subscribe((state) => {
+    this.authStateSub = this.authService.state$.subscribe((state) => {
       this.userRole = state.user?.role || null;
     });
 
@@ -167,9 +168,8 @@ export class NotificationBellComponent implements OnInit, OnDestroy {
   }
 
   ngOnDestroy() {
-    if (this.pollingSub) {
-      this.pollingSub.unsubscribe();
-    }
+    this.pollingSub?.unsubscribe();
+    this.authStateSub?.unsubscribe();
   }
 
   @HostListener('document:mousedown', ['$event'])

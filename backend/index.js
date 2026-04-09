@@ -31,11 +31,6 @@ const {handleUploadError} = require('./middlewares/upload');
 // Initialize database and admin user
 const initAdmin = require('./scripts/initAdmin');
 
-(async () => {
-  await connectDB();
-  await initAdmin();
-})();
-
 const app = express();
 
 // Security middleware
@@ -129,9 +124,19 @@ app.use((error, req, res, next) => {
 
 const PORT = config.PORT;
 
-app.listen(PORT, () => {
+const startServer = async () => {
+  await connectDB();
+  await initAdmin();
+
+  app.listen(PORT, () => {
     console.log(`🚀 Server running on http://localhost:${PORT}`);
     console.log(`📊 Environment: ${config.NODE_ENV}`);
     console.log(`🌐 Frontend URL: ${config.FRONTEND_URL}`);
     console.log(`📁 Upload path: ${config.UPLOAD_PATH}`);
+  });
+};
+
+startServer().catch((error) => {
+  console.error('❌ Failed to start server:', error.message);
+  process.exit(1);
 });

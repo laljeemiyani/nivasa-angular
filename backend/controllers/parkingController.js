@@ -1,5 +1,4 @@
 const ParkingSlotRequest = require('../models/ParkingSlotRequest');
-const ParkingSlot = require('../models/ParkingSlot');
 const User = require('../models/User');
 const { createNotificationInternal } = require('./notificationController');
 

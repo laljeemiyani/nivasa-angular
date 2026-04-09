@@ -12,9 +12,9 @@ This guide will help you set up and run the Angular frontend for the Nivasa-Web 
 
 ## Installation
 
-1.  Navigate to the `frontend-angular` directory:
+1.  Navigate to the `frontend` directory:
     ```bash
-    cd frontend-angular
+    cd frontend
     ```
 2.  Install dependencies:
     ```bash
@@ -25,7 +25,7 @@ This guide will help you set up and run the Angular frontend for the Nivasa-Web 
 
 The project uses a `.env` file to manage environment variables.
 
-1.  Create a `.env` file in the root of the `frontend-angular` directory.
+1.  Create a `.env` file in the root of the `frontend` directory.
 2.  Add the necessary variables. For a standard local environment, you can use:
     ```env
     API_URL=/api

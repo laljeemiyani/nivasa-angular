@@ -4,7 +4,7 @@ const FamilyMember = require('../models/FamilyMember');
 const Vehicle = require('../models/Vehicle');
 const Complaint = require('../models/Complaint');
 const Notification = require('../models/Notification');
-const DeletionAudit = require('../models/DeletionAudit');
+const AdminActivityLog = require('../models/AdminActivityLog');
 const { createNotificationInternal } = require('../controllers/notificationController');
 
 const DELETION_SOURCES = ['manual', 'property_sale', 'tenant_move_out', 'system'];
@@ -100,21 +100,23 @@ const runDeletionCascade = async ({
     updateOptions
   );
 
-  const auditPayload = [{
-    residentId: updatedResident._id,
-    performedBy,
-    reason: normalizedReason,
-    source,
-    residentSnapshot,
-    cascadeCounts,
-    forcedLogout: true,
-    metadata
-  }];
-
-  const auditRecord = await DeletionAudit.create(
-    auditPayload,
-    session ? { session } : undefined
-  );
+  const auditRecord = await AdminActivityLog.create({
+    adminId: performedBy,
+    adminName: 'System',
+    action: `Resident account deleted: ${resident.fullName}`,
+    entityType: 'resident_account',
+    entityId: updatedResident._id,
+    details: {
+      residentSnapshot,
+      cascadeCounts,
+      source,
+      reason: normalizedReason,
+      forcedLogout: true,
+      metadata
+    },
+    ipAddress: 'system',
+    timestamp: now
+  });
 
   return { cascadeCounts, auditRecord };
 };
@@ -233,14 +235,14 @@ const deleteResidentAccount = async ({
     console.error('Failed to send deletion notification to resident:', notificationError.message);
   }
 
-  if (notificationIds.length && deletionResult.auditRecord?.[0]?._id) {
-    await DeletionAudit.findByIdAndUpdate(deletionResult.auditRecord[0]._id, {
-      $set: { notificationIds }
+  if (deletionResult.auditRecord?._id) {
+    await AdminActivityLog.findByIdAndUpdate(deletionResult.auditRecord._id, {
+      $set: { 'details.notificationIds': notificationIds }
     });
   }
 
   return {
-    auditId: deletionResult.auditRecord?.[0]?._id,
+    auditId: deletionResult.auditRecord?._id,
     cascadeCounts: deletionResult.cascadeCounts,
     forcedLogout: true,
     source

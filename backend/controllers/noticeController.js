@@ -145,9 +145,24 @@ const getNotices = async (req, res) => {
 const getNotice = async (req, res) => {
     try {
         const {noticeId} = req.params;
+        const isAdmin = req.user && req.user.role === 'admin';
+        const now = new Date();
+        const startOfToday = new Date(
+            now.getFullYear(),
+            now.getMonth(),
+            now.getDate()
+        );
 
-        const notice = await Notice.findById(noticeId)
-            .populate('userId', 'fullName');
+        const filter = { _id: noticeId };
+        if (!isAdmin) {
+            filter.isActive = true;
+            filter.$or = [
+                { expiryDate: null },
+                { expiryDate: { $gte: startOfToday } }
+            ];
+        }
+
+        const notice = await Notice.findOne(filter).populate('userId', 'fullName');
 
         if (!notice) {
             return res.status(404).json({

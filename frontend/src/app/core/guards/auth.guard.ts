@@ -4,7 +4,10 @@ import {
   CanActivate,
   Router,
   RouterStateSnapshot,
+  UrlTree,
 } from '@angular/router';
+import { Observable } from 'rxjs';
+import { filter, map, take } from 'rxjs/operators';
 import { AuthService } from '../services/auth.service';
 
 @Injectable({
@@ -17,22 +20,22 @@ export class AuthGuard implements CanActivate {
   canActivate(
     route: ActivatedRouteSnapshot,
     state: RouterStateSnapshot,
-  ): boolean {
-    const { isAuthenticated, user, isLoading } = this.authService.currentState;
+  ): Observable<boolean | UrlTree> {
+    return this.authService.state$.pipe(
+      filter((auth) => !auth.isLoading),
+      take(1),
+      map(({ isAuthenticated, user }) => {
+        if (!isAuthenticated) {
+          return this.router.createUrlTree(['/login']);
+        }
 
-    // Simplification for the guard: we assume checkInitialAuth has run.
-    if (!isAuthenticated) {
-      this.router.navigate(['/login']);
-      return false;
-    }
+        const requiredRole = route.data['requiredRole'] as string | undefined;
+        if (requiredRole && user?.role !== requiredRole) {
+          return this.router.createUrlTree(['/unauthorized']);
+        }
 
-    const requiredRole = route.data['requiredRole'] as string | undefined;
-
-    if (requiredRole && user?.role !== requiredRole) {
-      this.router.navigate(['/unauthorized']);
-      return false;
-    }
-
-    return true;
+        return true;
+      }),
+    );
   }
 }
