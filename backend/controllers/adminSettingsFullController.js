@@ -224,7 +224,7 @@ const changePassword = async (req, res) => {
         }
         
         // Get resident settings for password strength
-        const residentSettings = await ResidentSettings.getSettings();
+        const residentSettings = await AppSettings.getSettings();
         
         if (residentSettings.strongPasswordRequired) {
             // Strong password requirements
