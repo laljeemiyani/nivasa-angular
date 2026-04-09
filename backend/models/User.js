@@ -89,8 +89,6 @@ const userSchema = new mongoose.Schema({
     // ── Admin-only profile fields (only populated for role === 'admin') ──────
     adminUsername: {
         type: String,
-        unique: true,
-        sparse: true,
         trim: true,
         lowercase: true,
         minlength: [3, 'Username must be at least 3 characters'],
@@ -178,6 +176,8 @@ const userSchema = new mongoose.Schema({
 userSchema.index({ status: 1 });
 userSchema.index({ role: 1 });
 userSchema.index({ isDeleted: 1 });
+// Sparse unique: only enforces uniqueness when adminUsername is non-null (residents are null)
+userSchema.index({ adminUsername: 1 }, { unique: true, sparse: true });
 
 // Hash password before saving
 userSchema.pre('save', async function (next) {
