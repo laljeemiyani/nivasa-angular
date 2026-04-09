@@ -167,6 +167,8 @@ const userSchema = new mongoose.Schema({
 userSchema.index({ status: 1 });
 userSchema.index({ role: 1 });
 userSchema.index({ isDeleted: 1 });
+// Unique flat per wing — sparse so residents without flat details don't conflict
+userSchema.index({ wing: 1, flatNumber: 1 }, { unique: true, sparse: true });
 
 // Hash password before saving
 userSchema.pre('save', async function (next) {

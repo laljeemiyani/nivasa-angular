@@ -78,6 +78,21 @@ const register = async (req, res) => {
             });
         }
 
+        // Check flat uniqueness — wing + flatNumber must be unique per resident
+        if (wing && flatNumber) {
+            const occupiedFlat = await User.findOne({
+                wing,
+                flatNumber,
+                isDeleted: { $ne: true }
+            });
+            if (occupiedFlat) {
+                return res.status(400).json({
+                    success: false,
+                    message: `Flat ${wing}-${flatNumber} is already registered by another resident. Each flat can only have one account.`
+                });
+            }
+        }
+
         // Build user payload, only including truly provided optional fields
         const userData = {
             fullName,
@@ -334,6 +349,26 @@ const updateProfile = async (req, res) => {
                 });
             }
             updateData.email = normalizedEmail;
+        }
+
+        // Check flat uniqueness when wing or flatNumber is being updated
+        const newWing = wing || req.user.wing;
+        const newFlat = flatNumber || req.user.flatNumber;
+        if (wing || flatNumber) {
+            if (newWing && newFlat) {
+                const occupiedFlat = await User.findOne({
+                    wing: newWing,
+                    flatNumber: newFlat,
+                    isDeleted: { $ne: true },
+                    _id: { $ne: req.user._id }
+                });
+                if (occupiedFlat) {
+                    return res.status(400).json({
+                        success: false,
+                        message: `Flat ${newWing}-${newFlat} is already registered by another resident. Each flat can only have one account.`
+                    });
+                }
+            }
         }
 
         const user = await User.findByIdAndUpdate(

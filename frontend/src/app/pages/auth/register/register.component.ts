@@ -108,12 +108,16 @@ export class RegisterComponent {
           // No auto-redirect: let user read the message and click "Go to Sign In" when ready
         } else {
           this.errorMessage =
-            res.error || 'Registration failed. Please try again.';
+            res.error || res.message || 'Registration failed. Please try again.';
         }
       },
-      error: () => {
+      error: (err) => {
         this.loading = false;
-        this.errorMessage = 'Registration failed. Please try again.';
+        // Use the specific message from the backend (e.g. flat already taken)
+        this.errorMessage =
+          err?.error?.message ||
+          err?.message ||
+          'Registration failed. Please try again.';
       },
     });
   }
