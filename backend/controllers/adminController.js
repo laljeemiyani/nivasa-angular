@@ -89,8 +89,6 @@ const getResidents = async (req, res) => {
 
     const residents = await User.find(filter)
       .select('-password')
-      .populate('familyMembers')
-      .populate('vehicles')
       .sort({ createdAt: -1 })
       .skip((page - 1) * limit)
       .limit(limit);
@@ -653,8 +651,6 @@ module.exports = {
   exportResidents: async (req, res) => {
     try {
       const residents = await User.find({ role: 'resident', isDeleted: false })
-        .populate('familyMembers')
-        .populate('vehicles')
         .sort({ createdAt: -1 })
         .lean();
 
