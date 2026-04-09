@@ -75,7 +75,6 @@ const getAdminProfile = async (req, res) => {
                 fullName: user.fullName,
                 email: user.email,
                 phoneNumber: user.phoneNumber,
-                username: user.adminUsername,
                 profilePhotoUrl: user.profilePhotoUrl,
                 designation: user.adminDesignation,
                 bio: user.adminBio,
@@ -93,28 +92,13 @@ const getAdminProfile = async (req, res) => {
 const updateAdminProfile = async (req, res) => {
     try {
         const userId = req.user._id;
-        const { fullName, phoneNumber, username, designation, bio } = req.body;
-
-        // Check username uniqueness if provided
-        if (username) {
-            const existingUser = await User.findOne({
-                adminUsername: username.toLowerCase(),
-                _id: { $ne: userId }
-            });
-            if (existingUser) {
-                return res.status(400).json({
-                    success: false,
-                    message: 'Username is already taken'
-                });
-            }
-        }
+        const { fullName, phoneNumber, designation, bio } = req.body;
 
         const updateFields = {};
-        if (fullName)              updateFields.fullName         = fullName;
-        if (phoneNumber)           updateFields.phoneNumber      = phoneNumber;
-        if (username !== undefined) updateFields.adminUsername   = username ? username.toLowerCase() : null;
-        if (designation !== undefined) updateFields.adminDesignation = designation;
-        if (bio !== undefined)     updateFields.adminBio         = bio;
+        if (fullName)                  updateFields.fullName          = fullName;
+        if (phoneNumber)               updateFields.phoneNumber       = phoneNumber;
+        if (designation !== undefined) updateFields.adminDesignation  = designation;
+        if (bio !== undefined)         updateFields.adminBio          = bio;
 
         const user = await User.findByIdAndUpdate(
             userId,
@@ -139,7 +123,6 @@ const updateAdminProfile = async (req, res) => {
                 fullName: user.fullName,
                 email: user.email,
                 phoneNumber: user.phoneNumber,
-                username: user.adminUsername,
                 profilePhotoUrl: user.profilePhotoUrl,
                 designation: user.adminDesignation,
                 bio: user.adminBio
