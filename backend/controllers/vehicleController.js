@@ -38,25 +38,22 @@ const addVehicle = async (req, res) => {
 
         // Safety check for vehicleNumber
         if (!vehicleNumber) {
-            console.log('DEBUG: vehicleNumber is empty/falsy');
             return res.status(400).json({
                 success: false,
                 message: 'Vehicle number is required'
             });
         }
 
-        if (!parkingSlot) {
-            console.log('DEBUG: parkingSlot is empty/falsy');
-            return res.status(400).json({
-                success: false,
-                message: 'Parking slot is required'
-            });
+        // Validate parkingSlot format only if provided (optional at create time)
+        if (parkingSlot) {
+            const slotRegex = /^[A-F]-([1-9]|1[0-4])(0[1-4])-P[1-9]$/;
+            if (!slotRegex.test(parkingSlot)) {
+                return res.status(400).json({
+                    success: false,
+                    message: 'Invalid parking slot format. Use format: A-101-P1'
+                });
+            }
         }
-
-        // DEBUG: Log format validation (P1–P9 to support additional slots after admin approval)
-        const slotRegex = /^[A-F]-([1-9]|1[0-4])(0[1-4])-P[1-9]$/;
-        console.log(`DEBUG: parkingSlot value = "${parkingSlot}", regex test = ${slotRegex.test(parkingSlot)}`);
-        console.log(`DEBUG: parkingSlot chars =`, [...parkingSlot].map(c => c.charCodeAt(0)));
 
         // Check if vehicle number already exists (globally, not just for this user)
         const existingVehicle = await Vehicle.findOne({

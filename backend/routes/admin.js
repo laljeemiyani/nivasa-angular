@@ -20,7 +20,6 @@ const { validatePagination, validateObjectId } = require('../middlewares/validat
 const { uploadProfilePhoto } = require('../middlewares/upload');
 
 // ==================== PUBLIC SETTINGS (NO AUTH REQUIRED) ====================
-// Expose complaint categories for residents and public clients
 router.get('/settings/complaint-categories', adminSettingsController.getComplaintCategories);
 
 // All routes defined after this line require authentication and admin role
@@ -30,10 +29,19 @@ router.use(requireAdmin);
 // Dashboard
 router.get('/dashboard/stats', getDashboardStats);
 
-// Resident management
+// ==================== RESIDENT MANAGEMENT ====================
+// BUG 6 FIX: Static paths MUST come before parameterized routes like /:userId
+// or Express will match /residents/pending as /:userId = "pending" → wrong handler
 router.get('/residents', validatePagination, getResidents);
 router.get('/residents/export', exportResidents);
+router.get('/residents/pending', adminSettingsController.getPendingResidents);
+router.get('/residents/inactive', adminSettingsController.getInactiveResidents);
+
+// Parameterized resident routes (must come AFTER static ones above)
 router.put('/residents/:userId/status', validateObjectId('userId'), updateResidentStatus);
+router.put('/residents/:id/approve', validateObjectId('id'), adminSettingsController.approveResident);
+router.put('/residents/:id/reject', validateObjectId('id'), adminSettingsController.rejectResident);
+router.put('/residents/:id/reactivate', validateObjectId('id'), adminSettingsController.reactivateResident);
 router.delete('/residents/:userId', validateObjectId('userId'), deleteResident);
 
 // Complaint management
@@ -91,15 +99,6 @@ router.post('/activity/force-logout/:userId', validateObjectId('userId'), adminS
 router.get('/logs/activity', adminSettingsController.getAdminActivityLogs);
 router.get('/logs/platform', adminSettingsController.getPlatformEventLogs);
 router.get('/logs/login', adminSettingsController.getAdminLoginHistory);
-
-// Pending Residents
-router.get('/residents/pending', adminSettingsController.getPendingResidents);
-router.put('/residents/:id/approve', validateObjectId('id'), adminSettingsController.approveResident);
-router.put('/residents/:id/reject', validateObjectId('id'), adminSettingsController.rejectResident);
-
-// Inactive Residents
-router.get('/residents/inactive', adminSettingsController.getInactiveResidents);
-router.put('/residents/:id/reactivate', validateObjectId('id'), adminSettingsController.reactivateResident);
 
 // Danger Zone
 router.post('/danger/reset-platform', adminSettingsController.resetPlatformSettings);

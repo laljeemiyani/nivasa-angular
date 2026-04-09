@@ -141,19 +141,25 @@ export class AuthService {
     );
   }
 
+  /** Clears auth state locally without making any HTTP request. Used by the
+   *  interceptor to avoid a 401 → logout → 401 infinite loop. */
+  clearLocalState() {
+    localStorage.removeItem('token');
+    localStorage.removeItem('user');
+    this.updateState({
+      user: null,
+      token: null,
+      isAuthenticated: false,
+      error: null,
+    });
+  }
+
   logout(notify: boolean = true): Observable<{ success: boolean }> {
-    // Call logout endpoint to log the event
+    // Call logout endpoint to log the event server-side
     return this.http.post<any>(`${this.apiUrl}/logout`, {}).pipe(
       catchError(() => of({ success: true })), // Continue even if logout fails
       tap(() => {
-        localStorage.removeItem('token');
-        localStorage.removeItem('user');
-        this.updateState({
-          user: null,
-          token: null,
-          isAuthenticated: false,
-          error: null,
-        });
+        this.clearLocalState();
       }),
       map(() => ({ success: true }))
     );

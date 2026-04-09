@@ -9,7 +9,10 @@ const vehicleSchema = new mongoose.Schema({
     vehicleType: {
         type: String,
         required: [true, 'Vehicle type is required'],
-        enum: ['Car', 'Bike', 'EV', 'Truck', 'Bus'],
+        // Accept both frontend formats and backend enum values
+        enum: ['Car', 'Bike', 'EV', 'Truck', 'Bus',
+               'four_wheeler', 'two_wheeler', 'car', 'bike', 'ev', 'truck', 'bus',
+               'Four Wheeler', 'Two Wheeler'],
         trim: true
     },
     vehicleName: {
@@ -20,13 +23,15 @@ const vehicleSchema = new mongoose.Schema({
     },
     vehicleModel: {
         type: String,
-        required: [true, 'Vehicle model is required'],
+        required: false,          // optional — frontend may not send this field
+        default: null,
         trim: true,
         maxlength: [50, 'Vehicle model cannot exceed 50 characters']
     },
     vehicleColor: {
         type: String,
-        required: [true, 'Vehicle color is required'],
+        required: false,          // optional — frontend may not send this field
+        default: null,
         trim: true,
         maxlength: [30, 'Vehicle color cannot exceed 30 characters']
     },
@@ -40,8 +45,9 @@ const vehicleSchema = new mongoose.Schema({
     },
     parkingSlot: {
         type: String,
-        required: [true, 'Parking slot is required'],
-        match: [/^[A-F]-([1-9]|1[0-4])(0[1-4])-P[1-9]$/, 'Please enter a valid parking slot format (e.g., B-202-P1 or C-102-P3)'],
+        required: false,          // optional — can be assigned after vehicle is approved
+        default: null,
+        match: [/^[A-F]-([1-9]|1[0-4])(0[1-4])-P[1-9]$/, 'Please enter a valid parking slot format (e.g., B-202-P1)'],
         trim: true
     },
     registrationDate: {

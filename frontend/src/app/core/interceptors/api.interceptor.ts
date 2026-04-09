@@ -19,17 +19,24 @@ export const apiInterceptor: HttpInterceptorFn = (req, next) => {
 
   return next(clonedReq).pipe(
     catchError((error: HttpErrorResponse) => {
-      if (error.status === 401 && !req.url.includes('/auth/login')) {
-        authService.logout(false).subscribe(() => {
-          router.navigate(['/login']);
-        });
+      // Skip 401 handling for auth endpoints to prevent infinite loop
+      const isAuthUrl = req.url.includes('/auth/login') || req.url.includes('/auth/logout');
+
+      if (error.status === 401 && !isAuthUrl) {
+        // Clear token locally WITHOUT making another HTTP request to /logout
+        // (that would also 401 and loop forever)
+        localStorage.removeItem('token');
+        localStorage.removeItem('user');
+        authService.clearLocalState();
+        router.navigate(['/login']);
         return throwError(() => error);
       }
 
       if (error.status === 410 && error.error?.code === 'ACCOUNT_DELETED') {
-        authService.logout(false).subscribe(() => {
-          router.navigate(['/login']);
-        });
+        localStorage.removeItem('token');
+        localStorage.removeItem('user');
+        authService.clearLocalState();
+        router.navigate(['/login']);
         return throwError(() => error);
       }
 

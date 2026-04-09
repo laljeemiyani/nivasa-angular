@@ -7,7 +7,9 @@ const { createNotificationInternal, notifyAdmins } = require('./notificationCont
 const createParkingRequest = async (req, res) => {
     try {
         const userId = req.user._id;
-        const { requestedSlots, reason } = req.body;
+        // BUG 5 FIX: accept both 'requestedSlot' (singular, frontend) and 'requestedSlots' (plural)
+        const requestedSlots = req.body.requestedSlots || req.body.requestedSlot;
+        const { reason } = req.body;
 
         // Validate inputs
         if (!requestedSlots || !reason) {
@@ -282,9 +284,29 @@ const reviewParkingRequest = async (req, res) => {
     }
 };
 
+// BUG 4 FIX: Return which slots are already taken so the frontend slot-picker works
+const getAvailableSlots = async (req, res) => {
+    try {
+        const { getOccupiedSlots } = require('../utils/parkingUtils');
+        const occupiedSlots = await getOccupiedSlots();
+        res.json({
+            success: true,
+            data: { occupiedSlots }
+        });
+    } catch (error) {
+        console.error('Get available slots error:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Failed to fetch available slots',
+            error: error.message
+        });
+    }
+};
+
 module.exports = {
     createParkingRequest,
     getMyParkingRequests,
     getAllParkingRequests,
-    reviewParkingRequest
+    reviewParkingRequest,
+    getAvailableSlots
 };

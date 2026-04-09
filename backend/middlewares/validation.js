@@ -153,13 +153,15 @@ const validateUserLogin = [
     handleValidationErrors
 ];
 
-// Family member validation
+// Family member validation (all fields optional for partial updates)
 const validateFamilyMember = [
     body('fullName')
+        .optional()
         .trim()
         .isLength({min: 2, max: 100})
         .withMessage('Full name must be between 2 and 100 characters'),
     body('relation')
+        .optional()                           // BUG 3 FIX: optional so PUT can update single fields
         .trim()
         .isLength({min: 2, max: 50})
         .withMessage('Relation must be between 2 and 50 characters'),
@@ -186,8 +188,12 @@ const validateVehicle = [
         .trim()
         .withMessage('Vehicle type is required')
         .custom((value) => {
-            const validTypes = ['CAR', 'BIKE', 'EV', 'TRUCK', 'BUS'];
-            if (!validTypes.includes(value.toUpperCase())) {
+            // BUG 1 FIX: accept both frontend formats (four_wheeler, two_wheeler)
+            // and the backend enum values (CAR, BIKE, etc.)
+            const validTypes = ['CAR', 'BIKE', 'EV', 'TRUCK', 'BUS',
+                                'four_wheeler', 'two_wheeler', 'car', 'bike',
+                                'Four Wheeler', 'Two Wheeler'];
+            if (!validTypes.some(t => t.toLowerCase() === value.toLowerCase())) {
                 throw new Error('Vehicle type must be one of: Car, Bike, EV, Truck, Bus');
             }
             return true;
@@ -208,23 +214,22 @@ const validateVehicle = [
         .withMessage('Vehicle number cannot exceed 20 characters'),
 
     body('vehicleModel')
-        .notEmpty()
+        .optional()                           // BUG 1 FIX: frontend may call it 'model'
         .trim()
         .isLength({min: 1, max: 50})
-        .withMessage('Vehicle model is required and cannot exceed 50 characters'),
+        .withMessage('Vehicle model cannot exceed 50 characters'),
 
     body('vehicleColor')
-        .notEmpty()
+        .optional()                           // BUG 1 FIX: frontend may call it 'color'
         .trim()
         .isLength({min: 1, max: 30})
-        .withMessage('Vehicle color is required and cannot exceed 30 characters'),
+        .withMessage('Vehicle color cannot exceed 30 characters'),
 
     body('parkingSlot')
-        .notEmpty()
-        .withMessage('Parking slot is required')
+        .optional()                           // not always required at create time
         .trim()
         .matches(/^[A-F]-([1-9]|1[0-4])(0[1-4])-P[1-9]$/)
-        .withMessage('Parking slot must be in format A-102-P1 or C-102-P3 (wing A-F, flat 101-1404, slot P1-P9)'),
+        .withMessage('Parking slot must be in format A-102-P1 (wing A-F, flat 101-1404, slot P1-P9)'),
 
     handleValidationErrors,
 ];
