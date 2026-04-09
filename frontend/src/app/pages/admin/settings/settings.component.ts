@@ -367,6 +367,21 @@ export class SettingsComponent implements OnInit, OnDestroy {
       this.authService.updateProfile(updatedUser).subscribe();
     }
   }
+
+  onPhoneInput(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    // Remove any non-numeric characters
+    let sanitized = input.value.replace(/[^0-9]/g, '');
+    
+    // Ensure max length of 10
+    if (sanitized.length > 10) {
+      sanitized = sanitized.substring(0, 10);
+    }
+    
+    // Update input display and form control value
+    input.value = sanitized;
+    this.profileForm.get('phoneNumber')?.setValue(sanitized, { emitEvent: true });
+  }
   
   onPhotoSelected(event: Event): void {
     const input = event.target as HTMLInputElement;
