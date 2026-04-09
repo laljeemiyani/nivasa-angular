@@ -34,14 +34,49 @@ require('dotenv').config({ path: ENV_PATH });
 
 const warnings = [];
 const errors = [];
+const NODE_ENV = process.env.NODE_ENV || 'development';
+const IS_PRODUCTION = NODE_ENV === 'production';
+const DEFAULT_JWT_SECRET = 'your_super_secret_jwt_key_change_this_in_production';
+const DEFAULT_ADMIN_EMAIL = 'admin@nivasa.com';
+const DEFAULT_ADMIN_PASSWORD = 'admin123';
 
 // Critical vars that must be set
 if (!process.env.MONGODB_URI) {
   errors.push('MONGODB_URI is not set. The database connection will fail.');
 }
 
-if (!process.env.JWT_SECRET || process.env.JWT_SECRET === 'your_super_secret_jwt_key_change_this_in_production') {
-  warnings.push('JWT_SECRET is using the default/example value. Change this for production!');
+if (!process.env.JWT_SECRET) {
+  if (IS_PRODUCTION) {
+    errors.push('JWT_SECRET is not set. Production requires a strong, unique JWT secret.');
+  } else {
+    warnings.push('JWT_SECRET is not set. Falling back to the local development default.');
+  }
+} else if (process.env.JWT_SECRET === DEFAULT_JWT_SECRET) {
+  if (IS_PRODUCTION) {
+    errors.push('JWT_SECRET is using the default/example value. Set a strong production secret.');
+  } else {
+    warnings.push('JWT_SECRET is using the default/example value. Change this before production.');
+  }
+}
+
+if (!process.env.ADMIN_EMAIL) {
+  if (IS_PRODUCTION) {
+    errors.push('ADMIN_EMAIL is not set. Production admin bootstrap requires an explicit admin email.');
+  } else {
+    warnings.push('ADMIN_EMAIL is not set. Falling back to the local development default.');
+  }
+} else if (IS_PRODUCTION && process.env.ADMIN_EMAIL === DEFAULT_ADMIN_EMAIL) {
+  errors.push('ADMIN_EMAIL is using the default value. Set a unique production admin email.');
+}
+
+if (!process.env.ADMIN_PASSWORD) {
+  if (IS_PRODUCTION) {
+    errors.push('ADMIN_PASSWORD is not set. Production admin bootstrap requires an explicit admin password.');
+  } else {
+    warnings.push('ADMIN_PASSWORD is not set. Falling back to the local development default.');
+  }
+} else if (IS_PRODUCTION && process.env.ADMIN_PASSWORD === DEFAULT_ADMIN_PASSWORD) {
+  errors.push('ADMIN_PASSWORD is using the default value. Set a strong production admin password.');
 }
 
 if (!process.env.FRONTEND_URL) {
@@ -49,7 +84,7 @@ if (!process.env.FRONTEND_URL) {
 }
 
 if (!process.env.PORT) {
-  warnings.push('PORT is not set. Defaulting to 5000');
+  warnings.push('PORT is not set. Defaulting to 5001');
 }
 
 // Report

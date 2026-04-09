@@ -41,7 +41,7 @@ const vehicleSchema = new mongoose.Schema({
     parkingSlot: {
         type: String,
         required: [true, 'Parking slot is required'],
-        match: [/^[A-F]-([1-9]|1[0-4])(0[1-4])-P[1-2]$/, 'Please enter a valid parking slot format (e.g., B-202-P1)'],
+        match: [/^[A-F]-([1-9]|1[0-4])(0[1-4])-P[1-9]$/, 'Please enter a valid parking slot format (e.g., B-202-P1 or C-102-P3)'],
         trim: true
     },
     registrationDate: {

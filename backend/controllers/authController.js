@@ -168,7 +168,16 @@ const login = async (req, res) => {
             });
         }
 
-        // Check if user is approved FIRST (before password) so pending/rejected get 403 with clear message, not 401
+        // Check password before returning account-status details to reduce account enumeration.
+        const isPasswordValid = await user.comparePassword(password);
+        if (!isPasswordValid) {
+            return res.status(401).json({
+                success: false,
+                message: 'Invalid email or password'
+            });
+        }
+
+        // Check if user is approved after password validation
         if (user.role !== 'admin' && user.status !== 'approved') {
             let message = '';
             let code = 'ACCOUNT_NOT_APPROVED';
@@ -186,15 +195,6 @@ const login = async (req, res) => {
                 message,
                 status: user.status,
                 code
-            });
-        }
-
-        // Check password (only for approved/admin users at this point)
-        const isPasswordValid = await user.comparePassword(password);
-        if (!isPasswordValid) {
-            return res.status(401).json({
-                success: false,
-                message: 'Invalid email or password'
             });
         }
 
@@ -248,11 +248,22 @@ const login = async (req, res) => {
             });
         }
 
+        // Build user payload for frontend
+        const userPayload = user.toJSON();
+
+        // Update lastLoginAt / lastLoginIp for admin accounts
+        if (user.role === 'admin') {
+            await User.findByIdAndUpdate(user._id, {
+                lastLoginAt: new Date(),
+                lastLoginIp: getClientIp(req)
+            });
+        }
+
         res.json({
             success: true,
             message: 'Login successful',
             data: {
-                user: user.toJSON(),
+                user: userPayload,
                 token
             }
         });
@@ -269,9 +280,7 @@ const login = async (req, res) => {
 // Get current user profile
 const getProfile = async (req, res) => {
     try {
-        const user = await User.findById(req.user._id)
-            .populate('familyMembers')
-            .populate('vehicles');
+        const user = await User.findById(req.user._id).select('-password');
 
         res.json({
             success: true,
@@ -421,8 +430,15 @@ const changeEmail = async (req, res) => {
 const changePassword = async (req, res) => {
     try {
         const { currentPassword, newPassword } = req.body;
+        const currentToken = req.token;
 
         const user = await User.findById(req.user._id);
+        if (!user) {
+            return res.status(404).json({
+                success: false,
+                message: 'User not found'
+            });
+        }
 
         // Verify current password
         const isCurrentPasswordValid = await user.comparePassword(currentPassword);
@@ -435,11 +451,32 @@ const changePassword = async (req, res) => {
 
         // Update password
         user.password = newPassword;
+        user.sessionVersion = (user.sessionVersion || 0) + 1;
         await user.save();
+
+        if (currentToken) {
+            await Promise.all([
+                ActiveSession.deleteMany({
+                    userId: user._id,
+                    sessionToken: { $ne: currentToken }
+                }),
+                ActiveSession.findOneAndUpdate(
+                    { userId: user._id, sessionToken: currentToken },
+                    {
+                        $set: {
+                            isActive: true,
+                            lastActivityAt: new Date()
+                        }
+                    }
+                )
+            ]);
+        } else {
+            await ActiveSession.deleteMany({ userId: user._id });
+        }
 
         res.json({
             success: true,
-            message: 'Password changed successfully'
+            message: 'Password changed successfully. Other sessions have been signed out.'
         });
     } catch (error) {
         console.error('Change password error:', error);

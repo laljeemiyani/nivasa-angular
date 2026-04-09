@@ -1,20 +1,16 @@
 /**
- * Migration Script: Parking System Setup
- *
- * This one-time script:
- * 1. Sets parkingAllocation: 2 on all existing Users that don't already have it.
- * 2. Generates all 672 ParkingSlot documents (Wings A-F, Floors 1-14, Flats 01-04, P1/P2).
- * 3. Marks slots as occupied for existing active vehicles.
- *
- * Usage: node scripts/migrate_parking_system.js
+ * DEPRECATED — April 2026
+ * The ParkingSlot master collection was removed as part of the DB cleanup.
+ * Slot availability is now derived directly from the Vehicle collection.
+ * This migration script is no longer needed and should not be run.
  */
+console.error(
+  '❌  migrate_parking_system.js is deprecated.\n' +
+  '    The ParkingSlot collection was removed in the April 2026 DB cleanup.\n' +
+  '    Slot availability is now tracked via the Vehicle collection.'
+);
+process.exit(1);
 
-require('dotenv').config();
-const mongoose = require('mongoose');
-const connectDB = require('../config/database');
-const User = require('../models/User');
-const Vehicle = require('../models/Vehicle');
-const ParkingSlot = require('../models/ParkingSlot');
 
 const WINGS = ['A', 'B', 'C', 'D', 'E', 'F'];
 const FLOORS = Array.from({ length: 14 }, (_, i) => i + 1); // 1 to 14

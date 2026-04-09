@@ -1,4 +1,6 @@
-const API_URL = 'http://localhost:5000/api';
+const API_URL = process.env.API_URL || `http://localhost:${process.env.PORT || 5001}/api`;
+const ADMIN_EMAIL = process.env.ADMIN_EMAIL || 'admin@nivasa.com';
+const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'admin123';
 
 async function runTest() {
     try {
@@ -30,7 +32,7 @@ async function runTest() {
         const adminRes = await fetch(`${API_URL}/auth/login`, {
             method: 'POST',
             headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({email: 'admin@nivasa.com', password: 'admin123'})
+            body: JSON.stringify({email: ADMIN_EMAIL, password: ADMIN_PASSWORD})
         });
         const adminData = await adminRes.json();
         const adminToken = adminData.data.token;

@@ -28,8 +28,10 @@ backend/uploads/*
 # IDE/Editor
 .vscode/
 .trae/
+.qoder/
 .idea/
 .DS_Store
+.qoder/
 *.swp
 *.swo
 

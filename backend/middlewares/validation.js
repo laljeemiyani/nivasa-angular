@@ -1,14 +1,74 @@
 const {body, param, query, validationResult} = require('express-validator');
 const {validateCommonEmail} = require('../utils/validators');
 
+const SENSITIVE_LOG_FIELD_PATTERNS = [
+    /password/i,
+    /token/i,
+    /secret/i,
+    /authorization/i,
+    /cookie/i,
+    /email/i,
+    /phone/i,
+    /mobile/i,
+    /otp/i,
+    /code/i,
+    /fullName/i,
+    /wing/i,
+    /flat/i,
+    /unit/i,
+    /address/i,
+    /vehicleNumber/i,
+    /parkingSlot/i
+];
+
+const isSensitiveLogField = (fieldName = '') =>
+    SENSITIVE_LOG_FIELD_PATTERNS.some((pattern) => pattern.test(fieldName));
+
+const sanitizeLogValue = (value, fieldName = '') => {
+    if (value === null || value === undefined) {
+        return value;
+    }
+
+    if (fieldName && isSensitiveLogField(fieldName)) {
+        return '[REDACTED]';
+    }
+
+    if (Array.isArray(value)) {
+        return value.map((item) => sanitizeLogValue(item, fieldName));
+    }
+
+    if (typeof value === 'object') {
+        return Object.entries(value).reduce((sanitized, [key, nestedValue]) => {
+            sanitized[key] = sanitizeLogValue(nestedValue, key);
+            return sanitized;
+        }, {});
+    }
+
+    return value;
+};
+
+const sanitizeValidationErrors = (errors) =>
+    errors.map((error) => {
+        const fieldName = error.path || error.param || '';
+
+        if (!fieldName || !isSensitiveLogField(fieldName)) {
+            return error;
+        }
+
+        return {
+            ...error,
+            value: '[REDACTED]'
+        };
+    });
+
 // Handle validation errors
 const handleValidationErrors = (req, res, next) => {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
         console.log('=== VALIDATION FAILED ===');
         console.log('Request path:', req.originalUrl);
-        console.log('Request body:', JSON.stringify(req.body, null, 2));
-        console.log('Validation errors:', JSON.stringify(errors.array(), null, 2));
+        console.log('Request body:', JSON.stringify(sanitizeLogValue(req.body), null, 2));
+        console.log('Validation errors:', JSON.stringify(sanitizeValidationErrors(errors.array()), null, 2));
         return res.status(400).json({
             success: false,
             message: 'Validation failed',
@@ -163,8 +223,8 @@ const validateVehicle = [
         .notEmpty()
         .withMessage('Parking slot is required')
         .trim()
-        .matches(/^[A-F]-([1-9]|1[0-4])(0[1-4])-P[1-2]$/)
-        .withMessage('Parking slot must be in format A-503-P1 (e.g., A-123-P1)'),
+        .matches(/^[A-F]-([1-9]|1[0-4])(0[1-4])-P[1-9]$/)
+        .withMessage('Parking slot must be in format A-102-P1 or C-102-P3 (wing A-F, flat 101-1404, slot P1-P9)'),
 
     handleValidationErrors,
 ];

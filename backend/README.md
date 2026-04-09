@@ -13,7 +13,7 @@ This is the backend for the Nivasa Society Management System, a comprehensive so
 - Admin dashboard
 
 ## Prerequisites
-- Node.js (v14 or higher)
+- Node.js (v18 or higher)
 - MongoDB (v4.4 or higher)
 
 ## Setup Instructions
@@ -62,13 +62,9 @@ npm run dev
 npm start
 ```
 
-## Default Admin Credentials
-After starting the server for the first time, you can log in with these default credentials:
-
-- **Email**: admin@nivasa.com (or the value in your .env file)
-- **Password**: admin123 (or the value in your .env file)
-
-**Important**: For production, make sure to change these default credentials in your .env file before deployment.
+## Admin Credentials
+Set `ADMIN_EMAIL` and `ADMIN_PASSWORD` explicitly in `.env`.
+In production, startup validation rejects missing/default admin credentials.
 
 ## API Documentation
 
@@ -87,3 +83,5 @@ A health check endpoint is available at `/api/health`.
 - `npm run dev`: Start the server with nodemon for development
 - `npm run start-full`: Start the full server with all features
 - `npm run dev-full`: Start the full server with nodemon
+- `npm run start-simple`: Start simplified server (debug only)
+- `npm run dev-simple`: Start simplified server with nodemon (debug only)

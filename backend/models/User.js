@@ -78,15 +78,6 @@ const userSchema = new mongoose.Schema({
         type: String,
         default: null
     },
-    familyMembers: [{
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'FamilyMember'
-    }],
-
-    vehicles: [{
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'Vehicle'
-    }],
 
     parkingAllocation: {
         type: Number,
@@ -95,10 +86,38 @@ const userSchema = new mongoose.Schema({
         max: [10, 'Parking allocation cannot exceed 10']
     },
 
-    complaints: [{
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'Complaint'
-    }],
+    // ── Admin-only profile fields (only populated for role === 'admin') ──────
+    adminUsername: {
+        type: String,
+        unique: true,
+        sparse: true,
+        trim: true,
+        lowercase: true,
+        minlength: [3, 'Username must be at least 3 characters'],
+        maxlength: [30, 'Username cannot exceed 30 characters'],
+        match: [/^[a-z0-9_]+$/, 'Username can only contain lowercase letters, numbers, and underscores'],
+        default: null
+    },
+    adminDesignation: {
+        type: String,
+        trim: true,
+        maxlength: [100, 'Designation cannot exceed 100 characters'],
+        default: null
+    },
+    adminBio: {
+        type: String,
+        trim: true,
+        maxlength: [250, 'Bio cannot exceed 250 characters'],
+        default: null
+    },
+    lastLoginAt: {
+        type: Date,
+        default: null
+    },
+    lastLoginIp: {
+        type: String,
+        default: null
+    },
     role: {
         type: String,
         enum: ['admin', 'resident'],

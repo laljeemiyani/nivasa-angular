@@ -1,8 +1,5 @@
 const User = require('../models/User');
-const AdminProfile = require('../models/AdminProfile');
-const PlatformSettings = require('../models/PlatformSettings');
-const SocietySettings = require('../models/SocietySettings');
-const ResidentSettings = require('../models/ResidentSettings');
+const AppSettings = require('../models/AppSettings');
 const NotificationPreferences = require('../models/NotificationPreferences');
 const ResidentLoginLog = require('../models/ResidentLoginLog');
 const AdminActivityLog = require('../models/AdminActivityLog');
@@ -11,6 +8,7 @@ const bcrypt = require('bcryptjs');
 const crypto = require('crypto');
 const path = require('path');
 const fs = require('fs');
+const { deleteResidentAccount } = require('../services/residentDeletionService');
 
 // Helper to get client IP
 const getClientIp = (req) => {
@@ -65,35 +63,25 @@ const logAdminActivity = async (adminId, adminName, action, entityType, entityId
 const getAdminProfile = async (req, res) => {
     try {
         const userId = req.user._id;
-        
-        // Get user basic info
+
         const user = await User.findById(userId).select('-password');
         if (!user) {
             return res.status(404).json({ success: false, message: 'User not found' });
         }
-        
-        // Get or create admin profile
-        let profile = await AdminProfile.findOne({ userId });
-        if (!profile) {
-            profile = await AdminProfile.create({
-                userId,
-                accountCreatedAt: user.createdAt
-            });
-        }
-        
+
         res.json({
             success: true,
             data: {
                 fullName: user.fullName,
                 email: user.email,
                 phoneNumber: user.phoneNumber,
-                username: profile.username,
-                profilePhotoUrl: profile.profilePhotoUrl,
-                designation: profile.designation,
-                bio: profile.bio,
-                accountCreatedAt: profile.accountCreatedAt || user.createdAt,
-                lastLoginAt: profile.lastLoginAt,
-                lastLoginIp: profile.lastLoginIp
+                username: user.adminUsername,
+                profilePhotoUrl: user.profilePhotoUrl,
+                designation: user.adminDesignation,
+                bio: user.adminBio,
+                accountCreatedAt: user.createdAt,
+                lastLoginAt: user.lastLoginAt,
+                lastLoginIp: user.lastLoginIp
             }
         });
     } catch (error) {
@@ -106,56 +94,56 @@ const updateAdminProfile = async (req, res) => {
     try {
         const userId = req.user._id;
         const { fullName, phoneNumber, username, designation, bio } = req.body;
-        
+
         // Check username uniqueness if provided
         if (username) {
-            const existingProfile = await AdminProfile.findOne({ 
-                username: username.toLowerCase(),
-                userId: { $ne: userId }
+            const existingUser = await User.findOne({
+                adminUsername: username.toLowerCase(),
+                _id: { $ne: userId }
             });
-            if (existingProfile) {
-                return res.status(400).json({ 
-                    success: false, 
-                    message: 'Username is already taken' 
+            if (existingUser) {
+                return res.status(400).json({
+                    success: false,
+                    message: 'Username is already taken'
                 });
             }
         }
-        
-        // Update User model
-        const userUpdate = {};
-        if (fullName) userUpdate.fullName = fullName;
-        if (phoneNumber) userUpdate.phoneNumber = phoneNumber;
-        
-        if (Object.keys(userUpdate).length > 0) {
-            await User.findByIdAndUpdate(userId, userUpdate);
-        }
-        
-        // Update or create AdminProfile
-        const profileUpdate = {};
-        if (username !== undefined) profileUpdate.username = username ? username.toLowerCase() : null;
-        if (designation !== undefined) profileUpdate.designation = designation;
-        if (bio !== undefined) profileUpdate.bio = bio;
-        
-        let profile = await AdminProfile.findOneAndUpdate(
-            { userId },
-            { $set: profileUpdate },
-            { new: true, upsert: true }
-        );
-        
+
+        const updateFields = {};
+        if (fullName)              updateFields.fullName         = fullName;
+        if (phoneNumber)           updateFields.phoneNumber      = phoneNumber;
+        if (username !== undefined) updateFields.adminUsername   = username ? username.toLowerCase() : null;
+        if (designation !== undefined) updateFields.adminDesignation = designation;
+        if (bio !== undefined)     updateFields.adminBio         = bio;
+
+        const user = await User.findByIdAndUpdate(
+            userId,
+            { $set: updateFields },
+            { new: true, runValidators: true }
+        ).select('-password');
+
         await logAdminActivity(
-            userId, 
-            req.user.fullName || 'Admin', 
-            'Profile updated', 
-            'profile', 
+            userId,
+            req.user.fullName || 'Admin',
+            'Profile updated',
+            'profile',
             userId,
             { fields: Object.keys(req.body) },
             req
         );
-        
+
         res.json({
             success: true,
             message: 'Profile updated successfully',
-            data: profile
+            data: {
+                fullName: user.fullName,
+                email: user.email,
+                phoneNumber: user.phoneNumber,
+                username: user.adminUsername,
+                profilePhotoUrl: user.profilePhotoUrl,
+                designation: user.adminDesignation,
+                bio: user.adminBio
+            }
         });
     } catch (error) {
         console.error('Update Admin Profile Error:', error);
@@ -166,19 +154,15 @@ const updateAdminProfile = async (req, res) => {
 const uploadProfilePhoto = async (req, res) => {
     try {
         const userId = req.user._id;
-        
+
         if (!req.file) {
             return res.status(400).json({ success: false, message: 'No file uploaded' });
         }
-        
+
         const photoUrl = `/uploads/profile_photos/${req.file.filename}`;
-        
-        await AdminProfile.findOneAndUpdate(
-            { userId },
-            { profilePhotoUrl: photoUrl },
-            { upsert: true }
-        );
-        
+
+        await User.findByIdAndUpdate(userId, { profilePhotoUrl: photoUrl });
+
         await logAdminActivity(
             userId,
             req.user.fullName || 'Admin',
@@ -188,7 +172,7 @@ const uploadProfilePhoto = async (req, res) => {
             {},
             req
         );
-        
+
         res.json({
             success: true,
             message: 'Profile photo uploaded successfully',
@@ -355,11 +339,23 @@ const logoutAllOthers = async (req, res) => {
         const currentToken = req.token;
         
         await ActiveSession.deleteMany({ userId, sessionToken: { $ne: currentToken } });
-        
-        // Increment session version to invalidate other tokens
+
+        // Invalidate all old tokens while preserving current active session.
         const user = await User.findById(userId);
+        if (!user) {
+            return res.status(404).json({ success: false, message: 'User not found' });
+        }
+
         user.sessionVersion = (user.sessionVersion || 0) + 1;
         await user.save();
+
+        if (currentToken) {
+            await ActiveSession.findOneAndUpdate(
+                { userId, sessionToken: currentToken },
+                { $set: { isActive: true, lastActivityAt: new Date() } },
+                { new: false }
+            );
+        }
         
         await logAdminActivity(
             userId,
@@ -382,7 +378,7 @@ const logoutAllOthers = async (req, res) => {
 
 const getPlatformSettings = async (req, res) => {
     try {
-        const settings = await PlatformSettings.getSettings();
+        const settings = await AppSettings.getSettings();
         res.json({ success: true, data: settings });
     } catch (error) {
         console.error('Get Platform Settings Error:', error);
@@ -393,9 +389,8 @@ const getPlatformSettings = async (req, res) => {
 const updatePlatformSettings = async (req, res) => {
     try {
         const updates = req.body;
-        const settings = await PlatformSettings.getSettings();
-        
-        // Update allowed fields
+        const settings = await AppSettings.getSettings();
+
         const allowedFields = [
             'platformName', 'tagline', 'logoUrl', 'faviconUrl',
             'contactEmail', 'contactPhone', 'contactAddress',
@@ -403,25 +398,19 @@ const updatePlatformSettings = async (req, res) => {
             'allowResidentRegistration', 'enableComplaints', 'enableNoticeBoard',
             'enableVisitorLog', 'timezone', 'dateFormat'
         ];
-        
+
         allowedFields.forEach(field => {
-            if (updates[field] !== undefined) {
-                settings[field] = updates[field];
-            }
+            if (updates[field] !== undefined) settings[field] = updates[field];
         });
-        
+
         await settings.save();
-        
+
         await logAdminActivity(
-            req.user._id,
-            req.user.fullName || 'Admin',
-            'Platform settings updated',
-            'platform',
-            null,
-            { fields: Object.keys(updates) },
-            req
+            req.user._id, req.user.fullName || 'Admin',
+            'Platform settings updated', 'platform', null,
+            { fields: Object.keys(updates) }, req
         );
-        
+
         res.json({ success: true, message: 'Platform settings updated', data: settings });
     } catch (error) {
         console.error('Update Platform Settings Error:', error);
@@ -433,13 +422,8 @@ const updatePlatformSettings = async (req, res) => {
 
 const getComplaintCategories = async (req, res) => {
     try {
-        const settings = await SocietySettings.getSettings();
-        const categories = settings.complaintCategories || [];
-        
-        res.json({
-            success: true,
-            data: categories
-        });
+        const settings = await AppSettings.getSettings();
+        res.json({ success: true, data: settings.complaintCategories || [] });
     } catch (error) {
         console.error('Get Complaint Categories Error:', error);
         res.status(500).json({ success: false, message: 'Server error' });
@@ -450,7 +434,7 @@ const getComplaintCategories = async (req, res) => {
 
 const getSocietySettings = async (req, res) => {
     try {
-        const settings = await SocietySettings.getSettings();
+        const settings = await AppSettings.getSettings();
         res.json({ success: true, data: settings });
     } catch (error) {
         console.error('Get Society Settings Error:', error);
@@ -461,33 +445,26 @@ const getSocietySettings = async (req, res) => {
 const updateSocietySettings = async (req, res) => {
     try {
         const updates = req.body;
-        const settings = await SocietySettings.getSettings();
-        
-        // Update allowed fields
+        const settings = await AppSettings.getSettings();
+
         const allowedFields = [
             'maxResidentsPerSociety', 'maxVehiclesPerResident', 'maxComplaintsPerMonth',
             'complaintCategories', 'visitorPassValidityHours', 'noticeExpiryDays',
             'autoApproveSocieties', 'autoCloseComplaints', 'allowReopenComplaints'
         ];
-        
+
         allowedFields.forEach(field => {
-            if (updates[field] !== undefined) {
-                settings[field] = updates[field];
-            }
+            if (updates[field] !== undefined) settings[field] = updates[field];
         });
-        
+
         await settings.save();
-        
+
         await logAdminActivity(
-            req.user._id,
-            req.user.fullName || 'Admin',
-            'Society settings updated',
-            'society',
-            null,
-            { fields: Object.keys(updates) },
-            req
+            req.user._id, req.user.fullName || 'Admin',
+            'Society settings updated', 'society', null,
+            { fields: Object.keys(updates) }, req
         );
-        
+
         res.json({ success: true, message: 'Society settings updated', data: settings });
     } catch (error) {
         console.error('Update Society Settings Error:', error);
@@ -499,7 +476,7 @@ const updateSocietySettings = async (req, res) => {
 
 const getResidentSettings = async (req, res) => {
     try {
-        const settings = await ResidentSettings.getSettings();
+        const settings = await AppSettings.getSettings();
         res.json({ success: true, data: settings });
     } catch (error) {
         console.error('Get Resident Settings Error:', error);
@@ -510,32 +487,25 @@ const getResidentSettings = async (req, res) => {
 const updateResidentSettings = async (req, res) => {
     try {
         const updates = req.body;
-        const settings = await ResidentSettings.getSettings();
-        
-        // Update allowed fields
+        const settings = await AppSettings.getSettings();
+
         const allowedFields = [
             'approvalMode', 'maxFailedLoginAttempts', 'lockoutDurationMinutes',
             'allowProfileEdit', 'allowPasswordChange', 'strongPasswordRequired'
         ];
-        
+
         allowedFields.forEach(field => {
-            if (updates[field] !== undefined) {
-                settings[field] = updates[field];
-            }
+            if (updates[field] !== undefined) settings[field] = updates[field];
         });
-        
+
         await settings.save();
-        
+
         await logAdminActivity(
-            req.user._id,
-            req.user.fullName || 'Admin',
-            'Resident settings updated',
-            'resident',
-            null,
-            { fields: Object.keys(updates) },
-            req
+            req.user._id, req.user.fullName || 'Admin',
+            'Resident settings updated', 'resident', null,
+            { fields: Object.keys(updates) }, req
         );
-        
+
         res.json({ success: true, message: 'Resident settings updated', data: settings });
     } catch (error) {
         console.error('Update Resident Settings Error:', error);
@@ -1098,33 +1068,21 @@ const reactivateResident = async (req, res) => {
 const resetPlatformSettings = async (req, res) => {
     try {
         const { confirmation } = req.body;
-        
+
         if (confirmation !== 'RESET') {
-            return res.status(400).json({ 
-                success: false, 
-                message: 'Invalid confirmation code' 
-            });
+            return res.status(400).json({ success: false, message: 'Invalid confirmation code' });
         }
-        
-        // Delete and recreate with defaults
-        await PlatformSettings.deleteMany({});
-        const settings = await PlatformSettings.getSettings();
-        
+
+        // Delete singleton and recreate with defaults
+        await AppSettings.deleteMany({});
+        const settings = await AppSettings.getSettings();
+
         await logAdminActivity(
-            req.user._id,
-            req.user.fullName || 'Admin',
-            'Platform settings reset to defaults',
-            'danger_zone',
-            null,
-            {},
-            req
+            req.user._id, req.user.fullName || 'Admin',
+            'Platform settings reset to defaults', 'danger_zone', null, {}, req
         );
-        
-        res.json({ 
-            success: true, 
-            message: 'Platform settings reset to defaults',
-            data: settings
-        });
+
+        res.json({ success: true, message: 'Platform settings reset to defaults', data: settings });
     } catch (error) {
         console.error('Reset Platform Settings Error:', error);
         res.status(500).json({ success: false, message: 'Server error' });
@@ -1184,19 +1142,11 @@ const exportAllData = async (req, res) => {
         const data = {
             exportedAt: new Date(),
             exportedBy: admin.email,
-            platformSettings: await PlatformSettings.getSettings(),
-            societySettings: await SocietySettings.getSettings(),
-            residentSettings: await ResidentSettings.getSettings(),
+            appSettings: await AppSettings.getSettings(),
             notificationPreferences: await NotificationPreferences.getPreferences(),
             userCount: await User.countDocuments(),
-            activeResidents: await User.countDocuments({ 
-                role: 'resident', 
-                accountStatus: 'active' 
-            }),
-            inactiveResidents: await User.countDocuments({ 
-                role: 'resident', 
-                accountStatus: 'inactive' 
-            })
+            activeResidents: await User.countDocuments({ role: 'resident', accountStatus: 'active' }),
+            inactiveResidents: await User.countDocuments({ role: 'resident', accountStatus: 'inactive' })
         };
         
         await logAdminActivity(
@@ -1286,11 +1236,16 @@ const permanentDeleteResident = async (req, res) => {
             });
         }
         
-        // Permanent delete
-        await User.findByIdAndDelete(id);
-        
-        // Clean up related data
-        await ActiveSession.deleteMany({ userId: id });
+        await deleteResidentAccount({
+            residentId: id,
+            performedBy: req.user._id,
+            reason: `Permanent delete by admin (${req.user.fullName || 'Admin'})`,
+            source: 'manual',
+            metadata: {
+                confirmation,
+                residentName
+            }
+        });
         
         await logAdminActivity(
             req.user._id,
@@ -1304,7 +1259,7 @@ const permanentDeleteResident = async (req, res) => {
         
         res.json({ 
             success: true, 
-            message: 'Resident permanently deleted'
+            message: 'Resident deleted successfully'
         });
     } catch (error) {
         console.error('Permanent Delete Resident Error:', error);

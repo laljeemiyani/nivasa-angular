@@ -1,5 +1,4 @@
 const Vehicle = require('../models/Vehicle');
-const ParkingSlot = require('../models/ParkingSlot');
 const User = require('../models/User');
 const { notifyAdmins } = require('./notificationController');
 
@@ -54,8 +53,8 @@ const addVehicle = async (req, res) => {
             });
         }
 
-        // DEBUG: Log format validation
-        const slotRegex = /^[A-F]-([1-9]|1[0-4])(0[1-4])-P[1-2]$/;
+        // DEBUG: Log format validation (P1–P9 to support additional slots after admin approval)
+        const slotRegex = /^[A-F]-([1-9]|1[0-4])(0[1-4])-P[1-9]$/;
         console.log(`DEBUG: parkingSlot value = "${parkingSlot}", regex test = ${slotRegex.test(parkingSlot)}`);
         console.log(`DEBUG: parkingSlot chars =`, [...parkingSlot].map(c => c.charCodeAt(0)));
 
@@ -89,42 +88,16 @@ const addVehicle = async (req, res) => {
             });
         }
 
-        // Atomically claim the parking slot using findOneAndUpdate
-        console.log(`DEBUG: Claiming slot - query: { slotNumber: "${parkingSlot}", isOccupied: false }`);
-        let claimedSlot = await ParkingSlot.findOneAndUpdate(
-            { slotNumber: parkingSlot, isOccupied: false },
-            { $set: { isOccupied: true, userId: req.user._id } },
-            { new: true }
-        );
-
-        console.log(`DEBUG: Claimed slot result:`, claimedSlot ? claimedSlot.slotNumber : 'NULL (slot not found or already occupied)');
-
-        if (!claimedSlot) {
-            // DEBUG: Check if slot exists at all
-            const slotExists = await ParkingSlot.findOne({ slotNumber: parkingSlot });
-            if (slotExists && slotExists.isOccupied) {
-                return res.status(409).json({
-                    success: false,
-                    message: 'This parking slot is no longer available. It may have been taken by another resident. Please select a different slot.'
-                });
-            } else if (!slotExists) {
-                const parts = parkingSlot.split('-');
-                const wing = parts[0];
-                const flatString = parts[1];
-                const position = parts[2];
-                const floor = parseInt(flatString.substring(0, flatString.length - 2), 10);
-
-                claimedSlot = new ParkingSlot({
-                    slotNumber: parkingSlot,
-                    wing,
-                    floor,
-                    flatNumber: flatString,
-                    position,
-                    isOccupied: true,
-                    userId: req.user._id
-                });
-                await claimedSlot.save();
-            }
+        // Check if parking slot is already taken by another active vehicle
+        const slotTaken = await Vehicle.findOne({
+            parkingSlot,
+            isDeleted: { $ne: true }
+        });
+        if (slotTaken) {
+            return res.status(409).json({
+                success: false,
+                message: 'This parking slot is already occupied. Please select a different slot.'
+            });
         }
 
         // Create the vehicle
@@ -147,20 +120,14 @@ const addVehicle = async (req, res) => {
             console.log('DEBUG: Vehicle saved successfully, id:', vehicle._id);
         } catch (saveError) {
             console.error('DEBUG: Vehicle save FAILED:', saveError.message);
-            console.error('DEBUG: Save error details:', JSON.stringify(saveError, null, 2));
-            // Rollback the parking slot claim if vehicle save fails
-            await ParkingSlot.findOneAndUpdate(
-                { slotNumber: parkingSlot },
-                { $set: { isOccupied: false, userId: null, vehicleId: null } }
-            );
+            if (saveError.code === 11000) {
+                return res.status(409).json({
+                    success: false,
+                    message: 'This parking slot was just taken. Please select a different slot.'
+                });
+            }
             throw saveError;
         }
-
-        // Update the parking slot with the vehicle reference
-        await ParkingSlot.findOneAndUpdate(
-            { slotNumber: parkingSlot },
-            { $set: { vehicleId: vehicle._id } }
-        );
 
         // Notify admins about new vehicle registration
         await notifyAdmins({
@@ -188,32 +155,54 @@ const addVehicle = async (req, res) => {
     }
 };
 
-// Get available parking slots with optional wing/floor filtering
+// Get available parking slots — derived from Vehicle records (no ParkingSlot master needed)
 const getAvailableSlots = async (req, res) => {
     try {
         const { wing, floor } = req.query;
 
-        const filter = { isOccupied: false };
-        if (wing && /^[A-F]$/.test(wing)) {
-            filter.wing = wing;
-        }
-        if (floor) {
-            const floorNum = parseInt(floor);
-            if (floorNum >= 1 && floorNum <= 14) {
-                filter.floor = floorNum;
+        // Build the slot number pattern from known building config (wings A-F, floors 1-14, flats 01-04)
+        const WINGS = ['A', 'B', 'C', 'D', 'E', 'F'];
+        const FLOORS = Array.from({ length: 14 }, (_, i) => i + 1);
+        const FLATS = ['01', '02', '03', '04'];
+        const POSITIONS = ['P1', 'P2', 'P3'];
+
+        // Generate all possible slot strings
+        let allSlots = [];
+        for (const w of WINGS) {
+            if (wing && wing !== w) continue;
+            for (const f of FLOORS) {
+                if (floor && parseInt(floor) !== f) continue;
+                for (const flat of FLATS) {
+                    for (const pos of POSITIONS) {
+                        allSlots.push(`${w}-${f}${flat}-${pos}`);
+                    }
+                }
             }
         }
 
-        const slots = await ParkingSlot.find(filter)
-            .select('slotNumber wing floor flatNumber position')
-            .sort({ wing: 1, floor: 1, flatNumber: 1, position: 1 });
+        // Find occupied slots from Vehicle collection
+        const occupiedVehicles = await Vehicle.find(
+            { isDeleted: { $ne: true }, parkingSlot: { $exists: true, $ne: null } },
+            { parkingSlot: 1 }
+        );
+        const occupiedSet = new Set(occupiedVehicles.map(v => v.parkingSlot));
+
+        const availableSlots = allSlots
+            .filter(s => !occupiedSet.has(s))
+            .map(s => {
+                const parts = s.split('-');
+                return {
+                    slotNumber: s,
+                    wing: parts[0],
+                    floor: parseInt(parts[1].slice(0, -2), 10),
+                    flatNumber: parts[1],
+                    position: parts[2]
+                };
+            });
 
         res.json({
             success: true,
-            data: {
-                slots,
-                total: slots.length
-            }
+            data: { slots: availableSlots, total: availableSlots.length }
         });
     } catch (error) {
         console.error('Get available slots error:', error);
@@ -347,51 +336,19 @@ const updateVehicle = async (req, res) => {
             }
         }
 
-        // Handle parking slot change atomically
+        // Handle parking slot change
         if (parkingSlot && parkingSlot !== existingVehicle.parkingSlot) {
-            // Release old slot
-            await ParkingSlot.findOneAndUpdate(
-                { slotNumber: existingVehicle.parkingSlot },
-                { $set: { isOccupied: false, userId: null, vehicleId: null } }
-            );
-
-            let claimedSlot = await ParkingSlot.findOneAndUpdate(
-                { slotNumber: parkingSlot, isOccupied: false },
-                { $set: { isOccupied: true, userId: req.user._id, vehicleId: existingVehicle._id } },
-                { new: true }
-            );
-
-            if (!claimedSlot) {
-                const slotExists = await ParkingSlot.findOne({ slotNumber: parkingSlot });
-                if (slotExists && slotExists.isOccupied) {
-                    // Re-claim old slot since new one failed
-                    await ParkingSlot.findOneAndUpdate(
-                        { slotNumber: existingVehicle.parkingSlot },
-                        { $set: { isOccupied: true, userId: req.user._id, vehicleId: existingVehicle._id } }
-                    );
-                    return res.status(409).json({
-                        success: false,
-                        message: 'The new parking slot is no longer available. Your original slot has been kept.'
-                    });
-                } else if (!slotExists) {
-                    const parts = parkingSlot.split('-');
-                    const wing = parts[0];
-                    const flatString = parts[1];
-                    const position = parts[2];
-                    const floor = parseInt(flatString.substring(0, flatString.length - 2), 10);
-
-                    claimedSlot = new ParkingSlot({
-                        slotNumber: parkingSlot,
-                        wing,
-                        floor,
-                        flatNumber: flatString,
-                        position,
-                        isOccupied: true,
-                        userId: req.user._id,
-                        vehicleId: existingVehicle._id
-                    });
-                    await claimedSlot.save();
-                }
+            // Check if new slot is taken by another active vehicle
+            const slotTaken = await Vehicle.findOne({
+                parkingSlot,
+                _id: { $ne: vehicleId },
+                isDeleted: { $ne: true }
+            });
+            if (slotTaken) {
+                return res.status(409).json({
+                    success: false,
+                    message: 'The new parking slot is already occupied. Your original slot has been kept.'
+                });
             }
         }
 
@@ -445,15 +402,7 @@ const deleteVehicle = async (req, res) => {
             });
         }
 
-        // Release the parking slot
-        if (vehicle.parkingSlot) {
-            await ParkingSlot.findOneAndUpdate(
-                { slotNumber: vehicle.parkingSlot },
-                { $set: { isOccupied: false, userId: null, vehicleId: null } }
-            );
-        }
-
-        // Soft delete the vehicle
+        // Soft delete the vehicle (slot string stays on Vehicle, uniqueness is partial-index enforced)
         vehicle.isDeleted = true;
         vehicle.deletedAt = new Date();
         vehicle.deletedBy = req.user._id;
@@ -526,24 +475,33 @@ const getVehicleStats = async (req, res) => {
     }
 };
 
-// Get all vehicles (Admin or general listing, supports optional userId filter)
+// Get all vehicles with resident-safe scoping
 const getAllVehicles = async (req, res) => {
     try {
         const page = parseInt(req.query.page) || 1;
         const limit = parseInt(req.query.limit) || 10;
         const skip = (page - 1) * limit;
+        const isAdmin = req.user.role === 'admin';
 
         const filter = { isDeleted: { $ne: true } };
-        if (req.query.userId) {
+        if (isAdmin && req.query.userId) {
             filter.userId = req.query.userId;
+        }
+        if (!isAdmin) {
+            filter.userId = req.user._id;
+        }
+
+        const vehiclesQuery = Vehicle.find(filter)
+            .skip(skip)
+            .limit(limit)
+            .sort({ createdAt: -1 });
+
+        if (isAdmin) {
+            vehiclesQuery.populate('userId', 'fullName email wing flatNumber profilePhotoUrl');
         }
 
         const [vehicles, total] = await Promise.all([
-            Vehicle.find(filter)
-                .populate('userId', 'fullName email wing flatNumber profilePhoto')
-                .skip(skip)
-                .limit(limit)
-                .sort({ createdAt: -1 }),
+            vehiclesQuery,
             Vehicle.countDocuments(filter)
         ]);
 

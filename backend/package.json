@@ -3,12 +3,15 @@
   "version": "1.0.0",
   "main": "index.js",
   "scripts": {
-    "start": "node simple-server.js",
-    "dev": "nodemon simple-server.js",
+    "start": "node index.js",
+    "dev": "nodemon index.js",
     "start-full": "node index.js",
     "dev-full": "nodemon index.js",
+    "start-simple": "node simple-server.js",
+    "dev-simple": "nodemon simple-server.js",
     "test": "jest --runInBand",
-    "seed": "node scripts/seed_data.js"
+    "seed": "node scripts/seed_data.js",
+    "cleanup-demo": "node scripts/cleanup_demo_data.js"
   },
   "keywords": [],
   "author": "",
