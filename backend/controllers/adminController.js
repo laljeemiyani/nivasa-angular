@@ -73,11 +73,11 @@ const getResidents = async (req, res) => {
     const search = req.query.search;
 
     const filter = { role: 'resident', isDeleted: false };
-    
+
     if (status) {
       filter.status = status;
     }
-    
+
     if (search) {
       filter.$or = [
         { fullName: { $regex: search, $options: 'i' } },
@@ -161,7 +161,7 @@ const updateResidentStatus = async (req, res) => {
       relatedModel: 'User',
       relatedId: user._id
     });
-    
+
     // Send response AFTER all operations are complete
     res.json({
       success: true,
@@ -187,11 +187,11 @@ const getComplaints = async (req, res) => {
     const category = req.query.category;
 
     const filter = { isDeleted: false };
-    
+
     if (status) {
       filter.status = status;
     }
-    
+
     if (category) {
       filter.category = category;
     }
@@ -240,7 +240,7 @@ const updateComplaintStatus = async (req, res) => {
       });
     }
 
-    const updateData = { 
+    const updateData = {
       status,
       adminId: req.user._id
     };
@@ -268,10 +268,22 @@ const updateComplaintStatus = async (req, res) => {
 
     try {
       const { createNotificationInternal } = require('../controllers/notificationController');
+
+      const baseStatusText = status.replace('_', ' ');
+      const hasResponse = !!adminResponse && adminResponse.trim().length > 0;
+
+      const messageLines = [];
+      messageLines.push(`Your complaint "${complaint.title}" has been marked as ${baseStatusText}.`);
+      if (hasResponse) {
+        messageLines.push('');
+        messageLines.push('Admin response:');
+        messageLines.push(adminResponse.trim());
+      }
+
       await createNotificationInternal({
         userId: complaint.userId._id,
-        title: `Complaint Status Updated`,
-        message: `Your complaint regarding "${complaint.title}" has been marked as ${status.replace('_', ' ')}.`,
+        title: `Complaint ${baseStatusText}`,
+        message: messageLines.join('\n'),
         type: status === 'resolved' ? 'success' : 'info',
         routingType: 'COMPLAINT_UPDATE',
         referenceId: complaint._id,
@@ -399,15 +411,15 @@ const getVehicles = async (req, res) => {
     const status = req.query.status;
 
     const filter = { isDeleted: false };
-    
+
     if (vehicleType) {
       filter.vehicleType = vehicleType;
     }
-    
+
     if (status) {
       filter.status = status;
     }
-    
+
     if (search) {
       filter.$or = [
         { vehicleName: { $regex: search, $options: 'i' } },
@@ -459,7 +471,7 @@ const updateVehicleStatus = async (req, res) => {
     }
 
     const vehicle = await Vehicle.findById(vehicleId);
-    
+
     if (!vehicle) {
       return res.status(404).json({
         success: false,
@@ -469,10 +481,10 @@ const updateVehicleStatus = async (req, res) => {
 
     // Store previous status to check if it changed
     const previousStatus = vehicle.status;
-    
+
     vehicle.status = status;
     await vehicle.save();
-    
+
     // Create notification for the resident if status changed
     if (previousStatus !== status) {
       try {
@@ -522,20 +534,20 @@ module.exports = {
       const limit = parseInt(req.query.limit) || 10;
       const search = req.query.search;
 
-      const filter = {isDeleted: false};
+      const filter = { isDeleted: false };
 
       if (search) {
         filter.$or = [
-          {fullName: {$regex: search, $options: 'i'}},
-          {relation: {$regex: search, $options: 'i'}}
+          { fullName: { $regex: search, $options: 'i' } },
+          { relation: { $regex: search, $options: 'i' } }
         ];
       }
 
       const familyMembers = await require('../models/FamilyMember').find(filter)
-          .populate('userId', 'fullName email wing flatNumber')
-          .sort({createdAt: -1})
-          .skip((page - 1) * limit)
-          .limit(limit);
+        .populate('userId', 'fullName email wing flatNumber')
+        .sort({ createdAt: -1 })
+        .skip((page - 1) * limit)
+        .limit(limit);
 
       const total = await require('../models/FamilyMember').countDocuments(filter);
 
@@ -597,7 +609,7 @@ module.exports = {
   broadcastNotification: async (req, res) => {
     try {
       const { title, message } = req.body;
-      
+
       if (!title || !message) {
         return res.status(400).json({
           success: false,
@@ -606,7 +618,7 @@ module.exports = {
       }
 
       const activeUsers = await User.find({ isDeleted: false }, '_id').lean();
-      
+
       if (activeUsers.length === 0) {
         return res.json({ success: true, message: 'No active users to notify' });
       }
@@ -634,6 +646,43 @@ module.exports = {
       res.status(500).json({
         success: false,
         message: 'Failed to broadcast notification',
+        error: error.message
+      });
+    }
+  },
+  exportResidents: async (req, res) => {
+    try {
+      const residents = await User.find({ role: 'resident', isDeleted: false })
+        .populate('familyMembers')
+        .populate('vehicles')
+        .sort({ createdAt: -1 })
+        .lean();
+
+      // Define standard headers
+      const headers = ['Resident Name', 'Email Address', 'Phone Number', 'Wing', 'Flat Number', 'Status'];
+      let csvContent = headers.join(',') + '\n';
+
+      residents.forEach(resident => {
+        const row = [
+          `"${(resident.fullName || '').replace(/"/g, '""')}"`,
+          `"${(resident.email || '').replace(/"/g, '""')}"`,
+          `"${(resident.phoneNumber || '').replace(/"/g, '""')}"`,
+          `"${(resident.wing || '').replace(/"/g, '""')}"`,
+          `"${(resident.flatNumber || '').replace(/"/g, '""')}"`,
+          `"${(resident.status || '').toUpperCase()}"`
+        ];
+        csvContent += row.join(',') + '\n';
+      });
+
+      res.setHeader('Content-Type', 'text/csv');
+      res.setHeader('Content-Disposition', `attachment; filename="nivasa-residents-${new Date().toISOString().split('T')[0]}.csv"`);
+      res.status(200).send(csvContent);
+
+    } catch (error) {
+      console.error('Export residents error:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Failed to export residents',
         error: error.message
       });
     }

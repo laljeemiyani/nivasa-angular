@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { HttpClient } from '@angular/common/http';
 import { environment } from '../../../../environments/environment';
+import { ToastService } from '../../../core/services/toast.service';
 
 import {
   CardComponent,
@@ -36,15 +37,21 @@ import {
 export class AdminFamilyMembersComponent implements OnInit {
   Math = Math;
   familyMembers: any[] = [];
+  residentGroups: Array<{ resident: any; members: any[] }> = [];
   loading = true;
   totalItems = 0;
   totalPages = 1;
   currentPage = 1;
   searchQuery = '';
 
+  expandedResidentId: string | null = null;
+
   private apiUrl = environment.apiUrl;
 
-  constructor(private http: HttpClient) {}
+  constructor(
+    private http: HttpClient,
+    private toast: ToastService,
+  ) {}
 
   ngOnInit() {
     this.fetchFamilyMembers();
@@ -68,16 +75,35 @@ export class AdminFamilyMembersComponent implements OnInit {
           };
           this.totalPages = pagination.totalPages;
           this.totalItems = pagination.totalItems;
+          this.buildResidentGroups();
         } else {
           this.familyMembers = [];
+          this.residentGroups = [];
         }
         this.loading = false;
       },
       error: (error) => {
         console.error('Error fetching family members:', error);
         this.loading = false;
+        this.toast.error('Failed to load family members', error.error?.message || 'Please try again.');
       },
     });
+  }
+
+  private buildResidentGroups() {
+    const map = new Map<string, { resident: any; members: any[] }>();
+    for (const member of this.familyMembers) {
+      const resident = member.userId || null;
+      const key = resident?._id || 'unknown';
+      if (!map.has(key)) {
+        map.set(key, {
+          resident,
+          members: [],
+        });
+      }
+      map.get(key)!.members.push(member);
+    }
+    this.residentGroups = Array.from(map.values());
   }
 
   handleSearch(e?: Event) {
@@ -102,5 +128,11 @@ export class AdminFamilyMembersComponent implements OnInit {
       }
     }
     return pages;
+  }
+
+  toggleResident(residentId: string | null) {
+    if (!residentId) return;
+    this.expandedResidentId =
+      this.expandedResidentId === residentId ? null : residentId;
   }
 }

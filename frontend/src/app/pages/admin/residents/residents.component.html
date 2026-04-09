@@ -1,136 +1,210 @@
-<div class="space-y-6">
-  <!-- Header -->
-  <div class="text-center">
-    <div class="flex items-center justify-center gap-2 mb-2">
-      <app-icon-users customClass="h-6 w-6 text-primary-600"></app-icon-users>
-      <h1 class="text-2xl font-bold text-gray-900">Resident Management</h1>
+<div class="space-y-8 pb-8">
+  <!-- Premium Header -->
+  <div class="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
+    <div>
+      <div class="flex items-center gap-3 mb-2">
+        <div
+          class="w-10 h-10 rounded-xl bg-indigo-50 dark:bg-indigo-900/30 flex items-center justify-center text-indigo-600 dark:text-indigo-400 shadow-sm border border-indigo-100 dark:border-indigo-800">
+          <app-icon-users customClass="h-5 w-5"></app-icon-users>
+        </div>
+        <h1 class="text-3xl font-display font-bold text-slate-900 dark:text-white tracking-tight">Resident Management</h1>
+      </div>
+      <p class="text-slate-500 dark:text-slate-400 font-medium ml-13">View, approve, and manage community registrants.</p>
     </div>
-    <p class="text-gray-600">Manage resident registrations and approvals</p>
+    <div class="flex gap-3">
+      <button (click)="exportData()" [disabled]="exportLoading"
+        class="px-4 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 rounded-xl text-sm font-bold shadow-sm hover:shadow hover:bg-slate-50 dark:hover:bg-slate-700 transition-all flex items-center gap-2">
+        <div *ngIf="exportLoading" class="animate-spin rounded-full h-4 w-4 border-b-2 border-slate-700 dark:border-slate-300"></div>
+        <ng-container *ngIf="!exportLoading">Export Data</ng-container>
+      </button>
+    </div>
   </div>
 
-  <app-card>
-    <app-card-header>
-      <app-card-title>Residents</app-card-title>
-      <app-card-description>View and manage all resident registrations</app-card-description>
-    </app-card-header>
-    <app-card-content>
-      <!-- Search and Filter Controls -->
-      <div class="mb-6 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-        <div class="relative flex-1 max-w-sm">
-          <app-icon-search customClass="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400"></app-icon-search>
-          <input
-            type="text"
-            placeholder="Search by name, email, wing, or flat"
-            [(ngModel)]="search"
-            (ngModelChange)="onFilterChange()"
-            class="pl-10 w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
-          />
-        </div>
-        <select
-          class="border border-gray-300 rounded-lg px-3 py-2 bg-white focus:ring-2 focus:ring-primary-500 focus:border-primary-500 min-w-[140px]"
-          [(ngModel)]="statusFilter"
+  <!-- Main Content Card -->
+  <div
+    class="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-[0_2px_10px_-3px_rgba(6,81,237,0.05)] dark:shadow-none overflow-hidden">
+
+    <!-- Search and Filter Bar -->
+    <div
+      class="flex flex-col md:flex-row md:items-center justify-between gap-4 p-5 border-b border-slate-200 dark:border-slate-700 bg-slate-50/80 dark:bg-slate-900/50">
+      <div class="relative flex-1 max-w-md group">
+        <svg class="pointer-events-none absolute left-3.5 top-1/2 transform -translate-y-1/2 h-4 w-4 text-slate-500 dark:text-slate-400 group-focus-within:text-primary-600 dark:text-primary-400 transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+        </svg>
+        <input
+          type="text"
+          placeholder="Search residents by name, email, or flat..."
+          [(ngModel)]="search"
           (ngModelChange)="onFilterChange()"
-        >
-          <option value="">All Statuses</option>
-          <option value="pending">Pending</option>
-          <option value="approved">Approved</option>
-          <option value="rejected">Rejected</option>
-        </select>
+          class="w-full pr-4 py-2.5 bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-600 rounded-xl text-sm focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 shadow-sm outline-none transition-all placeholder:text-slate-400 dark:placeholder:text-slate-500 font-medium text-slate-900 dark:text-slate-100"
+          style="padding-left: 2.8rem"
+        />
       </div>
 
-      <div *ngIf="loading" class="flex items-center justify-center py-12">
-        <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-500"></div>
-        <span class="ml-2">Loading residents...</span>
-      </div>
-
-      <div *ngIf="!loading && residents.length === 0" class="text-center py-12">
-        <app-icon-users customClass="h-12 w-12 text-gray-400 mx-auto mb-4"></app-icon-users>
-        <p class="text-gray-500">No residents found.</p>
-      </div>
-
-      <ng-container *ngIf="!loading && residents.length > 0">
-        <!-- Responsive Table -->
-        <div class="overflow-x-auto rounded-lg border border-gray-200">
-          <table class="w-full table-auto">
-            <thead>
-              <tr class="bg-gray-50 border-b border-gray-200">
-                <th class="px-4 py-3 text-left text-sm font-medium text-gray-700">Name</th>
-                <th class="px-4 py-3 text-left text-sm font-medium text-gray-700">Email</th>
-                <th class="px-4 py-3 text-left text-sm font-medium text-gray-700">Wing</th>
-                <th class="px-4 py-3 text-left text-sm font-medium text-gray-700">Flat</th>
-                <th class="px-4 py-3 text-left text-sm font-medium text-gray-700">Status</th>
-                <th class="px-4 py-3 text-right text-sm font-medium text-gray-700">Actions</th>
-              </tr>
-            </thead>
-            <tbody class="bg-white">
-              <tr *ngFor="let resident of residents; let i = index" 
-                  [ngClass]="i % 2 === 0 ? 'bg-white' : 'bg-gray-50/50'"
-                  class="border-b border-gray-100 hover:bg-gray-50 transition-colors">
-                <td class="px-4 py-3 text-sm font-medium text-gray-900">{{ resident.fullName }}</td>
-                <td class="px-4 py-3 text-sm text-gray-600">{{ resident.email }}</td>
-                <td class="px-4 py-3 text-sm text-gray-600">
-                  <span class="inline-flex items-center px-2 py-1 rounded-full text-xs bg-blue-100 text-blue-800">
-                    {{ resident.wing }}
-                  </span>
-                </td>
-                <td class="px-4 py-3 text-sm text-gray-600">{{ resident.flatNumber }}</td>
-                <td class="px-4 py-3">
-                  <app-badge [variant]="resident.status === 'pending' ? 'warning' : resident.status === 'approved' ? 'success' : 'error'" class="capitalize">
-                    {{ resident.status }}
-                  </app-badge>
-                </td>
-                <td class="px-4 py-3 text-right">
-                  <div class="flex items-center justify-end gap-2">
-                    <ng-container *ngIf="resident.status === 'pending'">
-                      <button class="h-9 w-9 p-0 flex items-center justify-center rounded-md border border-green-100 text-green-600 hover:bg-green-50"
-                              (click)="openModal(resident, 'approved')" title="Approve">
-                        <app-icon-check customClass="h-4 w-4"></app-icon-check>
-                      </button>
-                      <button class="h-9 w-9 p-0 flex items-center justify-center rounded-md border border-red-100 text-red-600 hover:bg-red-50"
-                              (click)="openModal(resident, 'rejected')" title="Reject">
-                        <app-icon-x customClass="h-4 w-4"></app-icon-x>
-                      </button>
-                    </ng-container>
-                    <button class="h-9 w-9 p-0 flex items-center justify-center rounded-md bg-blue-50 text-blue-600 hover:bg-blue-100"
-                            (click)="openModal(resident, 'view')" title="View details">
-                      <app-icon-eye customClass="h-4 w-4"></app-icon-eye>
-                    </button>
-                    <button class="h-9 w-9 p-0 flex items-center justify-center rounded-md border border-red-200 text-red-600 hover:bg-red-50"
-                            (click)="openDeleteModal(resident)" title="Delete">
-                      <app-icon-trash customClass="h-4 w-4"></app-icon-trash>
-                    </button>
-                  </div>
-                </td>
-              </tr>
-            </tbody>
-          </table>
+      <div class="flex items-center gap-3">
+        <div class="flex items-center gap-2 text-sm font-semibold text-slate-500 dark:text-slate-400">
+          <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
+          </svg>
+          Filter:
         </div>
-
-        <!-- Pagination -->
-        <div *ngIf="totalPages > 1" class="flex items-center justify-between mt-6">
-          <div class="text-sm text-gray-500">Page {{ page }} of {{ totalPages }}</div>
-          <div class="flex items-center space-x-2">
-            <button class="px-3 py-1 border border-gray-300 rounded text-sm hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed flex items-center"
-                    (click)="setPage(page - 1)" [disabled]="page === 1">
-              <app-icon-chevron-left customClass="h-4 w-4 mr-1"></app-icon-chevron-left> Previous
-            </button>
-            <div class="flex items-center space-x-1">
-              <button *ngFor="let p of getPages()" 
-                      class="w-8 h-8 rounded text-sm flex items-center justify-center border"
-                      [ngClass]="page === p ? 'bg-primary-600 text-white border-primary-600' : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'"
-                      (click)="setPage(p)">
-                {{ p }}
-              </button>
-            </div>
-            <button class="px-3 py-1 border border-gray-300 rounded text-sm hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed flex items-center"
-                    (click)="setPage(page + 1)" [disabled]="page === totalPages">
-              Next <app-icon-chevron-right customClass="h-4 w-4 ml-1"></app-icon-chevron-right>
-            </button>
+        <div class="relative">
+          <select
+            class="appearance-none bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-600 text-slate-900 dark:text-slate-100 text-sm font-semibold rounded-xl pl-4 pr-10 py-2.5 shadow-sm focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 outline-none transition-all min-w-[150px] cursor-pointer"
+            [(ngModel)]="statusFilter" (ngModelChange)="onFilterChange()">
+            <option value="">All Statuses</option>
+            <option value="pending">Pending Approval</option>
+            <option value="approved">Approved</option>
+            <option value="rejected">Rejected</option>
+          </select>
+          <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-slate-500 dark:text-slate-400">
+            <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+            </svg>
           </div>
         </div>
-      </ng-container>
-    </app-card-content>
-  </app-card>
+      </div>
+    </div>
+
+    <!-- loading State -->
+    <div *ngIf="loading" class="flex flex-col items-center justify-center py-20 px-4">
+      <div class="animate-spin rounded-full h-10 w-10 border-b-2 border-indigo-600 mb-4"></div>
+      <p class="text-slate-500 dark:text-slate-400 font-medium animate-pulse">Loading resident records...</p>
+    </div>
+
+    <!-- Empty State -->
+    <div *ngIf="!loading && residents.length === 0"
+      class="flex flex-col items-center justify-center py-24 px-4 text-center">
+      <div
+        class="w-16 h-16 bg-slate-50 dark:bg-slate-700 rounded-2xl flex items-center justify-center mb-4 border border-slate-100 dark:border-slate-600 shadow-sm">
+        <app-icon-users customClass="h-8 w-8 text-slate-400 dark:text-slate-500"></app-icon-users>
+      </div>
+      <h3 class="text-lg font-bold text-slate-900 dark:text-white mb-1">No residents found</h3>
+      <p class="text-slate-500 dark:text-slate-400 max-w-sm">We couldn't find any residents matching your current search filters. Try
+        adjusting them.</p>
+    </div>
+
+    <!-- Table -->
+    <ng-container *ngIf="!loading && residents.length > 0">
+      <div class="overflow-x-auto">
+        <table class="w-full text-left border-collapse">
+          <thead>
+            <tr class="bg-slate-50/80 dark:bg-slate-700/50 border-b border-slate-200 dark:border-slate-700">
+              <th class="px-6 py-4 text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest whitespace-nowrap">
+                Resident Details</th>
+              <th class="px-6 py-4 text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest whitespace-nowrap">Unit
+                Info</th>
+              <th class="px-6 py-4 text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest whitespace-nowrap">Status
+              </th>
+              <th
+                class="px-6 py-4 text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest text-right whitespace-nowrap">
+                Actions</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-slate-100 dark:divide-slate-700">
+            <tr *ngFor="let resident of residents; let i = index" class="hover:bg-indigo-50/30 dark:hover:bg-indigo-900/20 transition-colors group">
+              <!-- Name & Email -->
+              <td class="px-6 py-4">
+                <div class="flex items-center gap-3">
+                  <div
+                    class="w-10 h-10 rounded-full bg-slate-100 dark:bg-slate-700 flex items-center justify-center flex-shrink-0 text-slate-600 dark:text-slate-300 font-bold border border-slate-200 dark:border-slate-600">
+                    {{ resident.fullName.charAt(0).toUpperCase() }}
+                  </div>
+                  <div>
+                    <div class="font-bold text-slate-900 dark:text-slate-100 group-hover:text-indigo-700 dark:group-hover:text-indigo-400 transition-colors">{{
+                      resident.fullName }}</div>
+                    <div class="text-sm font-medium text-slate-500 dark:text-slate-400">{{ resident.email }}</div>
+                  </div>
+                </div>
+              </td>
+
+              <!-- Wing/Flat -->
+              <td class="px-6 py-4">
+                <div class="flex flex-col">
+                  <span class="text-sm font-bold text-slate-800 dark:text-slate-200">Flat {{ resident.flatNumber }}</span>
+                  <span class="text-xs font-semibold text-slate-500 dark:text-slate-400">Wing {{ resident.wing }}</span>
+                </div>
+              </td>
+
+              <!-- Status Badge -->
+              <td class="px-6 py-4">
+                <app-badge
+                  [variant]="resident.status === 'pending' ? 'warning' : resident.status === 'approved' ? 'success' : 'error'"
+                  class="capitalize text-[11px] font-bold tracking-wide px-2.5 py-1">
+                  {{ resident.status }}
+                </app-badge>
+              </td>
+
+              <!-- Actions -->
+              <td class="px-6 py-4">
+                <div class="flex items-center justify-end gap-2 opacity-80 group-hover:opacity-100 transition-opacity">
+
+                  <!-- Pending Actions -->
+                  <ng-container *ngIf="resident.status === 'pending'">
+                    <button
+                      class="h-8 w-8 rounded-lg flex items-center justify-center bg-white dark:bg-slate-700 border border-emerald-200 dark:border-emerald-800 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-900/30 hover:border-emerald-300 shadow-sm transition-all focus:outline-none focus:ring-2 focus:ring-emerald-500/20"
+                      (click)="openModal(resident, 'approved')" title="Approve Registration">
+                      <app-icon-check customClass="h-4 w-4"></app-icon-check>
+                    </button>
+                    <button
+                      class="h-8 w-8 rounded-lg flex items-center justify-center bg-white dark:bg-slate-700 border border-rose-200 dark:border-rose-800 text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-900/30 hover:border-rose-300 shadow-sm transition-all focus:outline-none focus:ring-2 focus:ring-rose-500/20"
+                      (click)="openModal(resident, 'rejected')" title="Reject Registration">
+                      <app-icon-x customClass="h-4 w-4"></app-icon-x>
+                    </button>
+                    <div class="w-px h-6 bg-slate-200 dark:bg-slate-600 mx-1"></div>
+                  </ng-container>
+
+                  <!-- Generic Actions -->
+                  <button
+                    class="h-8 w-8 rounded-lg flex items-center justify-center bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-600 hover:text-indigo-600 dark:hover:text-indigo-400 shadow-sm transition-all focus:outline-none focus:ring-2 focus:ring-slate-500/20"
+                    (click)="openModal(resident, 'view')" title="View Full Details">
+                    <app-icon-eye customClass="h-4 w-4"></app-icon-eye>
+                  </button>
+                  <button
+                    class="h-8 w-8 rounded-lg flex items-center justify-center bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 text-slate-600 dark:text-slate-400 hover:bg-rose-50 dark:hover:bg-rose-900/30 hover:text-rose-600 dark:hover:text-rose-400 hover:border-rose-200 shadow-sm transition-all focus:outline-none focus:ring-2 focus:ring-slate-500/20"
+                    (click)="openDeleteModal(resident)" title="Delete Record">
+                    <app-icon-trash customClass="h-4 w-4"></app-icon-trash>
+                  </button>
+                </div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Pagination -->
+      <div *ngIf="totalPages > 1"
+        class="flex items-center justify-between p-5 border-t border-slate-100 dark:border-slate-700 bg-slate-50/30 dark:bg-slate-800/30">
+        <div class="text-sm font-medium text-slate-500 dark:text-slate-400">
+          Showing <span class="font-bold text-slate-700 dark:text-slate-300">Page {{ page }}</span> of <span
+            class="font-bold text-slate-700 dark:text-slate-300">{{ totalPages }}</span>
+        </div>
+
+        <div class="flex items-center gap-1.5">
+          <button
+            class="h-9 px-3 rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-600 dark:text-slate-300 text-sm font-semibold hover:bg-slate-50 dark:hover:bg-slate-600 hover:text-slate-900 dark:hover:text-slate-100 disabled:opacity-50 disabled:bg-slate-50 dark:disabled:bg-slate-800 disabled:cursor-not-allowed shadow-sm transition-all flex items-center"
+            (click)="setPage(page - 1)" [disabled]="page === 1">
+            <app-icon-chevron-left customClass="h-4 w-4 mr-1"></app-icon-chevron-left> Prev
+          </button>
+
+          <div class="flex items-center gap-1 hidden sm:flex">
+            <button *ngFor="let p of getPages()"
+              class="h-9 min-w-[36px] px-2 rounded-lg text-sm font-bold flex items-center justify-center shadow-sm transition-all"
+              [ngClass]="page === p ? 'bg-indigo-600 text-white border-transparent' : 'bg-white dark:bg-slate-700 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-600 hover:bg-slate-50 dark:hover:bg-slate-600 hover:text-slate-900 dark:hover:text-slate-100'"
+              (click)="setPage(p)">
+              {{ p }}
+            </button>
+          </div>
+
+          <button
+            class="h-9 px-3 rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-600 dark:text-slate-300 text-sm font-semibold hover:bg-slate-50 dark:hover:bg-slate-600 hover:text-slate-900 dark:hover:text-slate-100 disabled:opacity-50 disabled:bg-slate-50 dark:disabled:bg-slate-800 disabled:cursor-not-allowed shadow-sm transition-all flex items-center"
+            (click)="setPage(page + 1)" [disabled]="page === totalPages">
+            Next <app-icon-chevron-right customClass="h-4 w-4 ml-1"></app-icon-chevron-right>
+          </button>
+        </div>
+      </div>
+    </ng-container>
+  </div>
 
   <!-- Modal for Approve/Reject/View -->
   <app-modal *ngIf="modalOpen" [isOpen]="modalOpen" (close)="closeModal()" size="md">
@@ -140,51 +214,115 @@
         <ng-container *ngIf="actionStatus === 'rejected'">Reject Resident</ng-container>
         <ng-container *ngIf="actionStatus === 'view'">Resident Details</ng-container>
       </app-modal-title>
-      <button class="absolute top-4 right-4 text-gray-400 hover:text-gray-600" (click)="closeModal()">
+      <button class="absolute top-4 right-4 text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:text-slate-100" (click)="closeModal()">
         <app-icon-x customClass="h-5 w-5"></app-icon-x>
       </button>
     </app-modal-header>
     <app-modal-body>
-      <div *ngIf="actionStatus === 'view' && selectedResident" class="space-y-4">
+      <div *ngIf="actionStatus === 'view' && selectedResident" class="space-y-5">
         <div class="grid grid-cols-2 gap-4">
-          <div><label class="text-sm font-medium text-gray-500">Name</label><p class="text-sm text-gray-900">{{ selectedResident.fullName }}</p></div>
-          <div><label class="text-sm font-medium text-gray-500">Email</label><p class="text-sm text-gray-900">{{ selectedResident.email }}</p></div>
-          <div><label class="text-sm font-medium text-gray-500">Wing</label><p class="text-sm text-gray-900">{{ selectedResident.wing }}</p></div>
-          <div><label class="text-sm font-medium text-gray-500">Flat</label><p class="text-sm text-gray-900">{{ selectedResident.flatNumber }}</p></div>
+          <div><label class="text-sm font-medium text-slate-500 dark:text-slate-400">Name</label>
+            <p class="text-sm text-slate-900 dark:text-slate-100">{{ selectedResident.fullName }}</p>
+          </div>
+          <div><label class="text-sm font-medium text-slate-500 dark:text-slate-400">Email</label>
+            <p class="text-sm text-slate-900 dark:text-slate-100">{{ selectedResident.email }}</p>
+          </div>
+          <div><label class="text-sm font-medium text-slate-500 dark:text-slate-400">Wing</label>
+            <p class="text-sm text-slate-900 dark:text-slate-100">{{ selectedResident.wing }}</p>
+          </div>
+          <div><label class="text-sm font-medium text-slate-500 dark:text-slate-400">Flat</label>
+            <p class="text-sm text-slate-900 dark:text-slate-100">{{ selectedResident.flatNumber }}</p>
+          </div>
         </div>
         <div>
-          <label class="text-sm font-medium text-gray-500">Status</label>
+          <label class="text-sm font-medium text-slate-500 dark:text-slate-400">Status</label>
           <div class="mt-1">
-            <app-badge [variant]="selectedResident.status === 'pending' ? 'warning' : selectedResident.status === 'approved' ? 'success' : 'error'" class="capitalize">
+            <span [class]="selectedResident.status === 'pending' ? 'bg-amber-500/10 text-amber-400 border-amber-500/30' : selectedResident.status === 'approved' ? 'bg-green-500/10 text-green-400 border-green-500/30' : 'bg-red-500/10 text-red-400 border-red-500/30'" class="capitalize px-2.5 py-1 rounded-full text-xs font-medium border">
               {{ selectedResident.status }}
-            </app-badge>
+            </span>
           </div>
         </div>
         <div *ngIf="selectedResident.rejectionReason">
-          <label class="text-sm font-medium text-gray-500">Rejection Reason</label>
-          <p class="text-sm text-gray-900 bg-red-50 p-3 rounded-lg border border-red-200">
+          <label class="text-sm font-medium text-slate-500 dark:text-slate-400">Rejection Reason</label>
+          <p class="text-sm text-slate-900 dark:text-slate-100 bg-red-500/10 p-3 rounded-lg border border-red-500/30">
             {{ selectedResident.rejectionReason }}
           </p>
+        </div>
+
+        <!-- Vehicles for this resident -->
+        <div class="pt-3 border-t border-slate-200 dark:border-slate-700">
+          <div class="flex items-center justify-between mb-2">
+            <label class="text-sm font-medium text-slate-900 dark:text-slate-100">Vehicles</label>
+            <span class="text-xs text-slate-500 dark:text-slate-400">
+              {{ residentVehicles.length }} registered
+            </span>
+          </div>
+          <div *ngIf="vehiclesLoading" class="flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400">
+            <div class="animate-spin rounded-full h-4 w-4 border-b-2 border-primary-500"></div>
+            Loading vehicles...
+          </div>
+          <div *ngIf="!vehiclesLoading && residentVehicles.length === 0" class="text-xs text-slate-500 dark:text-slate-400">
+            No vehicles registered yet.
+          </div>
+          <div *ngIf="!vehiclesLoading && residentVehicles.length > 0" class="space-y-2 mt-1">
+            <div
+              *ngFor="let v of residentVehicles"
+              class="rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 px-3 py-2 text-xs flex flex-col gap-1"
+            >
+              <div class="flex flex-wrap items-center gap-2">
+                <span class="font-semibold text-slate-900 dark:text-slate-100">
+                  {{ v.vehicleName }} {{ v.vehicleModel }}
+                </span>
+                <span class="px-2 py-0.5 rounded-full border border-slate-300 dark:border-slate-600 text-[10px] uppercase tracking-wide text-slate-600 dark:text-slate-300">
+                  {{ v.vehicleType }}
+                </span>
+                <span
+                  class="px-2 py-0.5 rounded-full border text-[10px] uppercase tracking-wide"
+                  [ngClass]="
+                    v.status === 'approved'
+                      ? 'bg-emerald-500/10 border-emerald-500/40 text-emerald-400'
+                      : v.status === 'rejected'
+                        ? 'bg-red-500/10 border-red-500/40 text-red-400'
+                        : 'bg-amber-500/10 border-amber-500/40 text-amber-400'
+                  "
+                >
+                  {{ v.status }}
+                </span>
+              </div>
+              <div class="flex flex-wrap gap-3 text-slate-600 dark:text-slate-300">
+                <span>
+                  <span class="font-medium">Reg:</span>
+                  <span class="font-mono">{{ v.vehicleNumber }}</span>
+                </span>
+                <span *ngIf="v.vehicleColor">
+                  <span class="font-medium">Color:</span> {{ v.vehicleColor }}
+                </span>
+                <span *ngIf="v.parkingSlot">
+                  <span class="font-medium">Slot:</span> {{ v.parkingSlot }}
+                </span>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
 
       <div *ngIf="actionStatus === 'approved' || actionStatus === 'rejected'" class="space-y-4">
         <div *ngIf="actionStatus === 'rejected'">
-          <label class="block text-sm font-medium text-gray-700 mb-2">Rejection Reason *</label>
+          <label class="block text-sm font-medium text-slate-900 dark:text-slate-100 mb-2">Rejection Reason *</label>
           <textarea rows="3" [(ngModel)]="rejectionReason" placeholder="Enter reason for rejection"
-                    class="w-full rounded-lg border border-gray-300 px-3 py-2 focus:ring-2 focus:ring-primary-500 focus:border-primary-500 resize-none"></textarea>
+            class="w-full rounded-lg border border-slate-300 dark:border-slate-600 bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-slate-100 px-3 py-2 focus:ring-2 focus:ring-primary-500 focus:border-primary-500 resize-none placeholder:text-slate-400 dark:placeholder:text-slate-500"></textarea>
         </div>
-        <div class="bg-gray-50 p-4 rounded-lg border">
-          <p class="text-sm text-gray-700">Are you sure you want to <strong class="text-gray-900">{{ actionStatus }}</strong> this resident?</p>
+        <div class="bg-slate-100 dark:bg-slate-800 p-4 rounded-lg border border-slate-200 dark:border-slate-700">
+          <p class="text-sm text-slate-500 dark:text-slate-400">Are you sure you want to <strong class="text-slate-900 dark:text-slate-100">{{ actionStatus
+              }}</strong> this resident?</p>
         </div>
       </div>
     </app-modal-body>
     <app-modal-footer>
-      <button *ngIf="actionStatus !== 'view'" 
-              class="px-4 py-2 rounded-md flex items-center gap-2 text-white disabled:opacity-50 disabled:cursor-not-allowed"
-              [ngClass]="actionStatus === 'rejected' ? 'bg-red-600 hover:bg-red-700' : 'bg-primary-600 hover:bg-primary-700'"
-              [disabled]="actionLoading"
-              (click)="handleStatusUpdate()">
+      <button *ngIf="actionStatus !== 'view'"
+        class="px-4 py-2 rounded-md flex items-center gap-2 text-white disabled:opacity-50 disabled:cursor-not-allowed"
+        [ngClass]="actionStatus === 'rejected' ? 'bg-red-600 hover:bg-red-700' : 'bg-primary-600 hover:bg-primary-700'"
+        [disabled]="actionLoading" (click)="handleStatusUpdate()">
         <div *ngIf="actionLoading" class="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
         <ng-container *ngIf="!actionLoading">
           <app-icon-check *ngIf="actionStatus === 'approved'" customClass="h-4 w-4"></app-icon-check>
@@ -192,7 +330,7 @@
           Confirm {{ actionStatus === 'approved' ? 'Approval' : 'Rejection' }}
         </ng-container>
       </button>
-      <button class="px-4 py-2 border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50" (click)="closeModal()">
+      <button class="px-4 py-2 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-100 rounded-md hover:bg-slate-100 dark:bg-slate-800" (click)="closeModal()">
         {{ actionStatus === 'view' ? 'Close' : 'Cancel' }}
       </button>
     </app-modal-footer>
@@ -202,27 +340,30 @@
   <app-modal *ngIf="deleteModalOpen" [isOpen]="deleteModalOpen" (close)="closeDeleteModal()" size="md">
     <app-modal-header>
       <app-modal-title>Delete Resident</app-modal-title>
-      <button class="absolute top-4 right-4 text-gray-400 hover:text-gray-600" (click)="closeDeleteModal()">
+      <button class="absolute top-4 right-4 text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:text-slate-100" (click)="closeDeleteModal()">
         <app-icon-x customClass="h-5 w-5"></app-icon-x>
       </button>
     </app-modal-header>
     <app-modal-body>
       <div *ngIf="selectedResident" class="space-y-4">
-        <div class="flex items-start gap-3 p-4 rounded-lg bg-red-50 border border-red-200">
-          <app-icon-alert-circle customClass="h-5 w-5 text-red-600 mt-1"></app-icon-alert-circle>
+        <div class="flex items-start gap-3 p-4 rounded-lg bg-red-500/10 border border-red-500/30">
+          <app-icon-alert-circle customClass="h-5 w-5 text-red-400 mt-1"></app-icon-alert-circle>
           <div>
-            <p class="text-sm text-gray-800 font-semibold">This action will remove {{ selectedResident.fullName }}'s access immediately.</p>
-            <p class="text-sm text-gray-600 mt-1">All associated family members, vehicles, complaints, and notifications will be soft-deleted.</p>
+            <p class="text-sm text-slate-900 dark:text-slate-100 font-semibold">This action will remove {{ selectedResident.fullName }}'s
+              access immediately.</p>
+            <p class="text-sm text-slate-500 dark:text-slate-400 mt-1">All associated family members, vehicles, complaints, and notifications
+              will be soft-deleted.</p>
           </div>
         </div>
         <div>
-          <label class="block text-sm font-medium text-gray-700 mb-2">Deletion Reason *</label>
+          <label class="block text-sm font-medium text-slate-900 dark:text-slate-100 mb-2">Deletion Reason *</label>
           <textarea rows="3" [(ngModel)]="deleteReason" placeholder="Provide context for this deletion"
-                    class="w-full rounded-lg border border-gray-300 px-3 py-2 focus:ring-2 focus:ring-primary-500 focus:border-primary-500 resize-none"></textarea>
+            class="w-full rounded-lg border border-slate-300 dark:border-slate-600 bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-slate-100 px-3 py-2 focus:ring-2 focus:ring-primary-500 focus:border-primary-500 resize-none placeholder:text-slate-400 dark:placeholder:text-slate-500"></textarea>
         </div>
         <div>
-          <label class="block text-sm font-medium text-gray-700 mb-2">Deletion Source</label>
-          <select [(ngModel)]="deleteSource" class="w-full rounded-lg border border-gray-300 px-3 py-2 focus:ring-2 focus:ring-primary-500 focus:border-primary-500">
+          <label class="block text-sm font-medium text-slate-900 dark:text-slate-100 mb-2">Deletion Source</label>
+          <select [(ngModel)]="deleteSource"
+            class="w-full rounded-lg border border-slate-300 dark:border-slate-600 bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-slate-100 px-3 py-2 focus:ring-2 focus:ring-primary-500 focus:border-primary-500">
             <option value="manual">Manual Admin Action</option>
             <option value="property_sale">Property Sold / Ownership Transfer</option>
             <option value="tenant_move_out">Tenant Move-out</option>
@@ -231,12 +372,15 @@
       </div>
     </app-modal-body>
     <app-modal-footer>
-      <button class="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
-              [disabled]="deleteLoading" (click)="handleResidentDeletion()">
+      <button
+        class="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+        [disabled]="deleteLoading" (click)="handleResidentDeletion()">
         <div *ngIf="deleteLoading" class="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-        <ng-container *ngIf="!deleteLoading"><app-icon-trash customClass="h-4 w-4"></app-icon-trash> Confirm Deletion</ng-container>
+        <ng-container *ngIf="!deleteLoading"><app-icon-trash customClass="h-4 w-4"></app-icon-trash> Confirm
+          Deletion</ng-container>
       </button>
-      <button class="px-4 py-2 border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50" (click)="closeDeleteModal()">Cancel</button>
+      <button class="px-4 py-2 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-100 rounded-md hover:bg-slate-100 dark:bg-slate-800"
+        (click)="closeDeleteModal()">Cancel</button>
     </app-modal-footer>
   </app-modal>
 </div>

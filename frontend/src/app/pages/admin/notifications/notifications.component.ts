@@ -1,16 +1,12 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { HttpClient } from '@angular/common/http';
 import { environment } from '../../../../environments/environment';
+import { ToastService } from '../../../core/services/toast.service';
+import { ConfirmDialogService } from '../../../core/services/confirm-dialog.service';
+import { interval, Subscription } from 'rxjs';
 
-import {
-  CardComponent,
-  CardHeaderComponent,
-  CardTitleComponent,
-  CardDescriptionComponent,
-  CardContentComponent,
-} from '../../../shared/components/ui/card/card.component';
 
 import {
   IconCheckComponent,
@@ -27,11 +23,6 @@ import {
   imports: [
     CommonModule,
     FormsModule,
-    CardComponent,
-    CardHeaderComponent,
-    CardTitleComponent,
-    CardDescriptionComponent,
-    CardContentComponent,
     IconCheckComponent,
     IconTrashComponent,
     IconAlertCircleComponent,
@@ -41,7 +32,7 @@ import {
   ],
   templateUrl: './notifications.component.html',
 })
-export class AdminNotificationsComponent implements OnInit {
+export class AdminNotificationsComponent implements OnInit, OnDestroy {
   notifications: any[] = [];
   loading = true;
   page = 1;
@@ -55,37 +46,67 @@ export class AdminNotificationsComponent implements OnInit {
   };
 
   private apiUrl = environment.apiUrl;
+  private pollingSub?: Subscription;
 
-  constructor(private http: HttpClient) {}
+  constructor(
+    private http: HttpClient,
+    private toastService: ToastService,
+    private confirmDialogService: ConfirmDialogService,
+  ) { }
 
   ngOnInit() {
     this.fetchNotifications();
+    // Poll every 30s so new registrations and updates appear without full page refresh
+    this.pollingSub = interval(30000).subscribe(() => this.refreshSilent());
+  }
+
+  ngOnDestroy() {
+    this.pollingSub?.unsubscribe();
   }
 
   fetchNotifications() {
     this.loading = true;
-    let params: any = { page: this.page.toString(), limit: '10' };
+    this.doFetch((response) => {
+      this.notifications =
+        response.data?.notifications ||
+        response.data?.data?.notifications ||
+        [];
+      const pagination = response.data?.pagination ||
+        response.data?.data?.pagination || { totalPages: 1, totalItems: 0 };
+      this.totalPages = pagination.totalPages;
+      this.totalItems = pagination.totalItems;
+      this.loading = false;
+    }, () => { this.loading = false; });
+  }
 
+  /** Refresh list in background without showing loading (for polling). */
+  private refreshSilent() {
+    this.doFetch((response) => {
+      this.notifications =
+        response.data?.notifications ||
+        response.data?.data?.notifications ||
+        [];
+      const pagination = response.data?.pagination ||
+        response.data?.data?.pagination || { totalPages: 1, totalItems: 0 };
+      this.totalPages = pagination.totalPages;
+      this.totalItems = pagination.totalItems;
+    }, () => {});
+  }
+
+  private doFetch(
+    onSuccess: (response: any) => void,
+    onError: () => void,
+  ) {
+    let params: any = { page: this.page.toString(), limit: '10' };
     if (this.filter.isRead) params.isRead = this.filter.isRead;
     if (this.filter.type) params.type = this.filter.type;
-    if (this.filter.relatedModel)
-      params.relatedModel = this.filter.relatedModel;
+    if (this.filter.relatedModel) params.relatedModel = this.filter.relatedModel;
 
     this.http.get<any>(`${this.apiUrl}/notifications`, { params }).subscribe({
-      next: (response) => {
-        this.notifications =
-          response.data?.notifications ||
-          response.data?.data?.notifications ||
-          [];
-        const pagination = response.data?.pagination ||
-          response.data?.data?.pagination || { totalPages: 1, totalItems: 0 };
-        this.totalPages = pagination.totalPages;
-        this.totalItems = pagination.totalItems;
-        this.loading = false;
-      },
-      error: (error) => {
-        console.error('Failed to fetch notifications:', error);
-        this.loading = false;
+      next: onSuccess,
+      error: (err) => {
+        console.error('Failed to fetch notifications:', err);
+        onError();
       },
     });
   }
@@ -131,10 +152,13 @@ export class AdminNotificationsComponent implements OnInit {
     });
   }
 
-  handleDeleteNotification(id: string) {
-    if (!confirm('Are you sure you want to delete this notification?')) return;
+  async handleDeleteNotification(id: string) {
+    const confirmed = await this.confirmDialogService.confirmDelete('this notification');
+    if (!confirmed) return;
+    
     this.http.delete(`${this.apiUrl}/notifications/${id}`).subscribe({
       next: () => {
+        this.toastService.success('Notification Deleted', 'The notification has been deleted successfully.');
         this.notifications = this.notifications.filter((n) => n._id !== id);
         this.totalItems = Math.max(0, this.totalItems - 1);
         if (this.notifications.length === 0 && this.page > 1) {
@@ -145,6 +169,7 @@ export class AdminNotificationsComponent implements OnInit {
       },
       error: (error) => {
         console.error('Error deleting notification:', error);
+        this.toastService.error('Error', error.error?.message || 'Failed to delete notification');
       },
     });
   }
@@ -152,6 +177,7 @@ export class AdminNotificationsComponent implements OnInit {
   handleMarkAllAsRead() {
     this.http.put(`${this.apiUrl}/notifications/mark-all-read`, {}).subscribe({
       next: () => {
+        this.toastService.success('Success', 'All notifications marked as read.');
         this.notifications = this.notifications.map((n) => ({
           ...n,
           isRead: true,
@@ -159,6 +185,7 @@ export class AdminNotificationsComponent implements OnInit {
       },
       error: (error) => {
         console.error('Error marking all notifications as read:', error);
+        this.toastService.error('Error', 'Failed to mark all notifications as read');
       },
     });
   }
@@ -166,13 +193,17 @@ export class AdminNotificationsComponent implements OnInit {
   getNotificationTypeClass(type: string) {
     switch (type) {
       case 'success':
-        return 'bg-green-50 border-green-200';
+        return 'bg-green-500/10 border-green-500/30';
       case 'warning':
-        return 'bg-yellow-50 border-yellow-200';
+        return 'bg-amber-500/10 border-amber-500/30';
       case 'error':
-        return 'bg-red-50 border-red-200';
+        return 'bg-red-500/10 border-red-500/30';
+      case 'new_registration':
+        return 'bg-indigo-500/10 border-indigo-500/30';
+      case 'status_update':
+        return 'bg-primary-500/10 border-primary-500/30';
       default:
-        return 'bg-blue-50 border-blue-200';
+        return 'bg-primary-500/10 border-primary-500/30';
     }
   }
 
@@ -184,6 +215,10 @@ export class AdminNotificationsComponent implements OnInit {
         return 'text-yellow-500';
       case 'error':
         return 'text-red-500';
+      case 'new_registration':
+        return 'text-indigo-500';
+      case 'status_update':
+        return 'text-primary-500';
       default:
         return 'text-blue-500';
     }
@@ -197,6 +232,10 @@ export class AdminNotificationsComponent implements OnInit {
         return '⚠️';
       case 'error':
         return '❌';
+      case 'new_registration':
+        return '👤';
+      case 'status_update':
+        return '📋';
       default:
         return 'ℹ️';
     }

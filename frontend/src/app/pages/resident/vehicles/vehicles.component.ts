@@ -3,6 +3,9 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { HttpClient } from '@angular/common/http';
 import { environment } from '../../../../environments/environment';
+import { AuthService } from '../../../core/services/auth.service';
+import { ToastService } from '../../../core/services/toast.service';
+import { ConfirmDialogService } from '../../../core/services/confirm-dialog.service';
 
 import {
   CardComponent,
@@ -11,7 +14,6 @@ import {
   CardDescriptionComponent,
   CardContentComponent,
 } from '../../../shared/components/ui/card/card.component';
-import { BadgeComponent } from '../../../shared/components/ui/badge/badge.component';
 import {
   ModalComponent,
   ModalHeaderComponent,
@@ -37,7 +39,6 @@ import {
     CardTitleComponent,
     CardDescriptionComponent,
     CardContentComponent,
-    BadgeComponent,
     ModalComponent,
     ModalHeaderComponent,
     ModalTitleComponent,
@@ -59,13 +60,7 @@ export class ResidentVehiclesComponent implements OnInit {
   activeVehicleCount = 0;
   canAddMore = true;
 
-  // Available slots
-  availableSlots: any[] = [];
-  filteredSlots: any[] = [];
-  slotSearch = '';
-  filterWing = '';
-  filterFloor = '';
-  loadingSlots = false;
+  // Available slots logic removed since it is auto-allocated
 
   // Parking requests
   parkingRequests: any[] = [];
@@ -98,7 +93,12 @@ export class ResidentVehiclesComponent implements OnInit {
 
   private apiUrl = environment.apiUrl;
 
-  constructor(private http: HttpClient) {}
+  constructor(
+    private http: HttpClient,
+    private authService: AuthService,
+    private toastService: ToastService,
+    private confirmDialogService: ConfirmDialogService,
+  ) { }
 
   ngOnInit() {
     this.fetchVehicles();
@@ -122,45 +122,7 @@ export class ResidentVehiclesComponent implements OnInit {
     });
   }
 
-  fetchAvailableSlots() {
-    this.loadingSlots = true;
-    const params: any = {};
-    if (this.filterWing) params.wing = this.filterWing;
-    if (this.filterFloor) params.floor = this.filterFloor;
-
-    this.http
-      .get<any>(`${this.apiUrl}/vehicles/available-slots`, { params })
-      .subscribe({
-        next: (response) => {
-          this.availableSlots = response.data.slots;
-          this.applySlotSearch();
-          this.loadingSlots = false;
-        },
-        error: (error) => {
-          console.error('Error fetching available slots:', error);
-          this.loadingSlots = false;
-        },
-      });
-  }
-
-  applySlotSearch() {
-    if (!this.slotSearch) {
-      this.filteredSlots = this.availableSlots;
-    } else {
-      const search = this.slotSearch.toUpperCase();
-      this.filteredSlots = this.availableSlots.filter((slot: any) =>
-        slot.slotNumber.includes(search),
-      );
-    }
-  }
-
-  onSlotFilterChange() {
-    this.fetchAvailableSlots();
-  }
-
-  onSlotSearchChange() {
-    this.applySlotSearch();
-  }
+  // Manual slot fetching removed
 
   fetchParkingRequests() {
     this.loadingRequests = true;
@@ -181,20 +143,37 @@ export class ResidentVehiclesComponent implements OnInit {
 
   openCreateModal() {
     this.modalMode = 'create';
+
+    // Auto-allocate parking slot
+    const user = this.authService.currentState.user;
+    let nextSlot = '';
+    if (user && user.wing && user.flatNumber) {
+      const prefix = `${user.wing}-${user.flatNumber}-P`;
+      const prefixUpper = prefix.toUpperCase();
+
+      const usedNumbers = this.vehicles
+        .map(v => v.parkingSlot)
+        .filter(slot => slot && slot.toUpperCase().startsWith(prefixUpper))
+        .map(slot => parseInt(slot.toUpperCase().replace(prefixUpper, ''), 10))
+        .filter(n => !isNaN(n));
+
+      let nextIndex = 1;
+      while (usedNumbers.includes(nextIndex)) {
+        nextIndex++;
+      }
+      nextSlot = `${user.wing}-${user.flatNumber}-P${nextIndex}`;
+    }
+
     this.formData = {
       vehicleType: '',
       vehicleName: '',
       vehicleModel: '',
       vehicleColor: '',
       vehicleNumber: '',
-      parkingSlot: '',
+      parkingSlot: nextSlot,
     };
     this.errors = {};
-    this.slotSearch = '';
-    this.filterWing = '';
-    this.filterFloor = '';
     this.isModalOpen = true;
-    this.fetchAvailableSlots();
   }
 
   openEditModal(vehicle: any) {
@@ -209,11 +188,7 @@ export class ResidentVehiclesComponent implements OnInit {
       parkingSlot: vehicle.parkingSlot || '',
     };
     this.errors = {};
-    this.slotSearch = '';
-    this.filterWing = '';
-    this.filterFloor = '';
     this.isModalOpen = true;
-    this.fetchAvailableSlots();
   }
 
   closeModal() {
@@ -250,12 +225,25 @@ export class ResidentVehiclesComponent implements OnInit {
 
   validateForm() {
     this.errors = {};
-    if (!this.formData.vehicleType) this.errors.vehicleType = 'Required';
-    if (!this.formData.vehicleName) this.errors.vehicleName = 'Required';
-    if (!this.formData.vehicleModel) this.errors.vehicleModel = 'Required';
-    if (!this.formData.vehicleNumber) this.errors.vehicleNumber = 'Required';
-    if (!this.formData.vehicleColor) this.errors.vehicleColor = 'Required';
-    if (!this.formData.parkingSlot) this.errors.parkingSlot = 'Required';
+    if (!this.formData.vehicleType) this.errors.vehicleType = 'Vehicle type is required';
+    if (!this.formData.vehicleName) this.errors.vehicleName = 'Vehicle make / name is required';
+    if (!this.formData.vehicleModel) this.errors.vehicleModel = 'Model is required';
+    if (!this.formData.vehicleColor) this.errors.vehicleColor = 'Color is required';
+    if (!this.formData.parkingSlot) this.errors.parkingSlot = 'Parking slot is required';
+
+    // Normalize and validate registration number against backend format
+    if (!this.formData.vehicleNumber) {
+      this.errors.vehicleNumber = 'Registration number is required';
+    } else {
+      const raw = this.formData.vehicleNumber.toString().toUpperCase().replace(/[^A-Z0-9]/g, '');
+      const pattern = /^[A-Z]{2}[0-9]{2}[A-Z]{1,2}[0-9]{4}$/; // e.g. MH04AB1234
+      if (!pattern.test(raw)) {
+        this.errors.vehicleNumber =
+          'Use format like MH04AB1234 (state code, 2 digits, 1–2 letters, 4 digits)';
+      } else {
+        this.formData.vehicleNumber = raw;
+      }
+    }
     return Object.keys(this.errors).length === 0;
   }
 
@@ -268,6 +256,7 @@ export class ResidentVehiclesComponent implements OnInit {
       console.log('Payload:', JSON.stringify(this.formData, null, 2));
       this.http.post(`${this.apiUrl}/vehicles`, this.formData).subscribe({
         next: () => {
+          this.toastService.success('Vehicle Added', 'Your vehicle has been registered successfully.');
           this.closeModal();
           this.fetchVehicles();
           this.submitting = false;
@@ -278,7 +267,7 @@ export class ResidentVehiclesComponent implements OnInit {
             JSON.stringify(err.error, null, 2),
           );
           console.error('HTTP status:', err.status);
-          alert(err.error?.message || 'Failed to save vehicle');
+          this.toastService.error('Error', err.error?.message || 'Failed to save vehicle');
           this.submitting = false;
         },
       });
@@ -290,37 +279,42 @@ export class ResidentVehiclesComponent implements OnInit {
         )
         .subscribe({
           next: () => {
+            this.toastService.success('Vehicle Updated', 'Your vehicle has been updated successfully.');
             this.closeModal();
             this.fetchVehicles();
             this.submitting = false;
           },
           error: (err) => {
             console.error(err);
-            alert(err.error?.message || 'Failed to update vehicle');
+            this.toastService.error('Error', err.error?.message || 'Failed to update vehicle');
             this.submitting = false;
           },
         });
     }
   }
 
-  handleDelete() {
+  async handleDelete() {
+    const confirmed = await this.confirmDialogService.confirmDelete('this vehicle');
+    if (!confirmed) return;
+
     this.http
       .delete(`${this.apiUrl}/vehicles/${this.selectedVehicle._id}`)
       .subscribe({
         next: () => {
+          this.toastService.success('Vehicle Deleted', 'Your vehicle has been removed successfully.');
           this.closeDeleteDialog();
           this.fetchVehicles();
         },
         error: (err) => {
           console.error(err);
-          alert(err.error?.message || 'Failed to delete vehicle');
+          this.toastService.error('Error', err.error?.message || 'Failed to delete vehicle');
         },
       });
   }
 
   submitParkingRequest() {
     if (!this.requestFormData.reason.trim()) {
-      alert('Please provide a reason for your request.');
+      this.toastService.warning('Validation Error', 'Please provide a reason for your request.');
       return;
     }
     this.submitting = true;
@@ -328,14 +322,14 @@ export class ResidentVehiclesComponent implements OnInit {
       .post(`${this.apiUrl}/parking/request`, this.requestFormData)
       .subscribe({
         next: () => {
+          this.toastService.success('Request Submitted', 'Your parking slot request has been submitted successfully.');
           this.closeRequestModal();
           this.fetchParkingRequests();
           this.submitting = false;
-          alert('Parking slot request submitted successfully!');
         },
         error: (err) => {
           console.error(err);
-          alert(err.error?.message || 'Failed to submit request');
+          this.toastService.error('Error', err.error?.message || 'Failed to submit request');
           this.submitting = false;
         },
       });
@@ -344,28 +338,28 @@ export class ResidentVehiclesComponent implements OnInit {
   getVehicleTypeColor(type: string) {
     switch (type?.toLowerCase()) {
       case 'car':
-        return 'info';
+        return 'bg-blue-500/10 border-blue-500/30 text-blue-400';
       case 'bike':
-        return 'success';
+        return 'bg-green-500/10 border-green-500/30 text-green-400';
       case 'scooter':
-        return 'secondary';
+        return 'bg-slate-100 dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-500 dark:text-slate-400';
       case 'truck':
-        return 'warning';
+        return 'bg-amber-500/10 border-amber-500/30 text-amber-400';
       default:
-        return 'secondary';
+        return 'bg-slate-100 dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-500 dark:text-slate-400';
     }
   }
 
   getRequestStatusColor(status: string) {
     switch (status) {
       case 'approved':
-        return 'success';
+        return 'bg-green-500/10 border-green-500/30 text-green-400';
       case 'rejected':
-        return 'error';
+        return 'bg-red-500/10 border-red-500/30 text-red-400';
       case 'pending':
-        return 'warning';
+        return 'bg-amber-500/10 border-amber-500/30 text-amber-400';
       default:
-        return 'secondary';
+        return 'bg-slate-100 dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-500 dark:text-slate-400';
     }
   }
 

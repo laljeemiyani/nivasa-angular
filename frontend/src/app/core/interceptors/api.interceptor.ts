@@ -20,14 +20,17 @@ export const apiInterceptor: HttpInterceptorFn = (req, next) => {
   return next(clonedReq).pipe(
     catchError((error: HttpErrorResponse) => {
       if (error.status === 401 && !req.url.includes('/auth/login')) {
-        authService.logout(false);
-        // Force navigate to login or show toast
-        router.navigate(['/login']);
+        authService.logout(false).subscribe(() => {
+          router.navigate(['/login']);
+        });
+        return throwError(() => error);
       }
 
       if (error.status === 410 && error.error?.code === 'ACCOUNT_DELETED') {
-        authService.logout(false);
-        router.navigate(['/login']);
+        authService.logout(false).subscribe(() => {
+          router.navigate(['/login']);
+        });
+        return throwError(() => error);
       }
 
       return throwError(() => error);

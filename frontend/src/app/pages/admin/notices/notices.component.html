@@ -1,17 +1,17 @@
-<div class="space-y-6 p-4 md:p-6 min-h-screen bg-gray-50">
+<div class="space-y-6 p-4 md:p-6 min-h-screen bg-slate-50 dark:bg-slate-900">
   <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 max-w-7xl mx-auto">
-    <h1 class="text-3xl font-bold text-gray-900">Society Notices</h1>
+    <h1 class="text-3xl font-bold text-slate-900 dark:text-white">Society Notices</h1>
     <button (click)="openCreateModal()" class="w-full sm:w-auto px-5 py-2.5 bg-primary-600 hover:bg-primary-700 text-white rounded-lg font-medium flex justify-center items-center shadow-sm">
       <span class="text-xl leading-none mr-2">+</span> Add New Notice
     </button>
   </div>
 
   <div class="max-w-7xl mx-auto">
-    <app-card class="shadow-sm border-gray-200">
+    <app-card class="shadow-sm border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800">
       <app-card-content class="p-0">
         <!-- Filter Bar -->
-        <div class="p-4 border-b border-gray-200 bg-white flex flex-col sm:flex-row gap-4">
-          <select [(ngModel)]="categoryFilter" (ngModelChange)="onFilterChange()" class="w-full sm:w-48 px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-primary-500">
+        <div class="p-4 border-b border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 flex flex-col sm:flex-row gap-4">
+          <select [(ngModel)]="categoryFilter" (ngModelChange)="onFilterChange()" class="w-full sm:w-48 px-3 py-2 border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 rounded-md focus:ring-2 focus:ring-primary-500">
             <option value="">All Categories</option>
             <option value="general">General</option>
             <option value="maintenance">Maintenance</option>
@@ -19,7 +19,7 @@
             <option value="event">Event</option>
             <option value="payment">Payment</option>
           </select>
-          <select [(ngModel)]="priorityFilter" (ngModelChange)="onFilterChange()" class="w-full sm:w-48 px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-primary-500">
+          <select [(ngModel)]="priorityFilter" (ngModelChange)="onFilterChange()" class="w-full sm:w-48 px-3 py-2 border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 rounded-md focus:ring-2 focus:ring-primary-500">
              <option value="">All Priorities</option>
              <option value="low">Low</option>
              <option value="medium">Medium</option>
@@ -29,58 +29,58 @@
 
         <div *ngIf="loading" class="flex items-center justify-center py-12">
           <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-500"></div>
-          <span class="ml-3 text-gray-600">Loading notices...</span>
+          <span class="ml-3 text-slate-600 dark:text-slate-400">Loading notices...</span>
         </div>
 
         <div *ngIf="!loading && notices.length === 0" class="text-center py-16">
-          <svg class="mx-auto h-12 w-12 text-gray-400 mb-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v1m2 13a2 2 0 01-2-2V7m2 13a2 2 0 002-2V9a2 2 0 00-2-2h-2m-4-3H9M7 16h6M7 8h6v4H7V8z"></path></svg>
-          <h3 class="text-lg font-medium text-gray-900">No notices found</h3>
-          <p class="text-gray-500">Adjust the filters or add a new notice.</p>
+          <svg class="mx-auto h-12 w-12 text-slate-400 dark:text-slate-500 mb-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v1m2 13a2 2 0 01-2-2V7m2 13a2 2 0 002-2V9a2 2 0 00-2-2h-2m-4-3H9M7 16h6M7 8h6v4H7V8z"></path></svg>
+          <h3 class="text-lg font-medium text-slate-900 dark:text-white">No notices found</h3>
+          <p class="text-slate-500 dark:text-slate-400">Adjust the filters or add a new notice.</p>
         </div>
 
         <ng-container *ngIf="!loading && notices.length > 0">
-          <div class="hidden md:grid grid-cols-12 gap-4 px-6 py-4 border-b border-gray-200 bg-gray-50 text-sm font-semibold text-gray-700 uppercase tracking-wider">
+          <div class="hidden md:grid grid-cols-12 gap-4 px-6 py-4 border-b border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-700/50 text-sm font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
             <div class="col-span-5">Title</div>
             <div class="col-span-2">Date</div>
             <div class="col-span-2">Status</div>
             <div class="col-span-3 text-right">Actions</div>
           </div>
 
-          <div class="divide-y divide-gray-100">
-            <div *ngFor="let notice of notices" class="grid grid-cols-1 md:grid-cols-12 gap-4 px-6 py-5 hover:bg-gray-50 transition-colors bg-white">
+          <div class="divide-y divide-slate-100 dark:divide-slate-700">
+            <div *ngFor="let notice of notices" class="grid grid-cols-1 md:grid-cols-12 gap-4 px-6 py-5 hover:bg-slate-50 dark:hover:bg-slate-700/30 transition-colors bg-white dark:bg-slate-800">
               <div class="col-span-5">
-                <h3 class="font-medium text-gray-900 text-lg md:text-base">{{ notice.title }}</h3>
+                <h3 class="font-medium text-slate-900 dark:text-slate-100 text-lg md:text-base">{{ notice.title }}</h3>
                 <div class="flex gap-2 mt-2 md:hidden">
                   <app-badge [variant]="notice.priority === 'high' ? 'error' : notice.priority === 'medium' ? 'warning' : 'secondary'">{{ notice.priority }}</app-badge>
                   <app-badge [variant]="'info'">{{ notice.category }}</app-badge>
                 </div>
               </div>
               <div class="col-span-2 flex items-center">
-                <span class="text-sm text-gray-600">{{ formatDate(notice.createdAt) }}</span>
+                <span class="text-sm text-slate-600 dark:text-slate-400">{{ formatDate(notice.createdAt) }}</span>
               </div>
               <div class="col-span-2 hidden md:flex items-center gap-2">
                  <app-badge [variant]="notice.priority === 'high' ? 'error' : notice.priority === 'medium' ? 'warning' : 'secondary'">{{ notice.priority }}</app-badge>
               </div>
-              <div class="col-span-3 flex justify-start md:justify-end gap-2 items-center mt-3 md:mt-0 pt-3 md:pt-0 border-t border-gray-100 md:border-0">
-                <button (click)="openViewModal(notice)" class="p-2 h-9 w-9 bg-gray-100 text-gray-600 hover:bg-gray-200 rounded-md flex items-center justify-center transition-colors" title="View"><app-icon-eye customClass="h-4 w-4"></app-icon-eye></button>
-                <button (click)="openEditModal(notice)" class="px-3 py-1.5 h-9 bg-blue-50 text-blue-600 hover:bg-blue-100 rounded-md text-sm font-medium transition-colors">Edit</button>
-                <button (click)="handleDelete(notice._id)" class="px-3 py-1.5 h-9 bg-red-50 text-red-600 hover:bg-red-100 rounded-md text-sm font-medium transition-colors"><app-icon-trash customClass="h-4 w-4 mr-1 hidden sm:inline"></app-icon-trash> Delete</button>
+              <div class="col-span-3 flex justify-start md:justify-end gap-2 items-center mt-3 md:mt-0 pt-3 md:pt-0 border-t border-slate-100 dark:border-slate-700 md:border-0">
+                <button (click)="openViewModal(notice)" class="p-2 h-9 w-9 bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-600 rounded-md flex items-center justify-center transition-colors" title="View"><app-icon-eye customClass="h-4 w-4"></app-icon-eye></button>
+                <button (click)="openEditModal(notice)" class="px-3 py-1.5 h-9 bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 hover:bg-blue-100 dark:hover:bg-blue-900/50 rounded-md text-sm font-medium transition-colors">Edit</button>
+                <button (click)="handleDelete(notice._id)" class="px-3 py-1.5 h-9 bg-red-50 dark:bg-red-900/30 text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/50 rounded-md text-sm font-medium transition-colors"><app-icon-trash customClass="h-4 w-4 mr-1 hidden sm:inline"></app-icon-trash> Delete</button>
               </div>
             </div>
           </div>
 
-          <div *ngIf="totalPages > 1" class="flex items-center justify-between px-6 py-4 border-t border-gray-200 bg-white rounded-b-lg">
-            <div class="text-sm text-gray-500">Page {{ page }} of {{ totalPages }}</div>
+          <div *ngIf="totalPages > 1" class="flex items-center justify-between px-6 py-4 border-t border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 rounded-b-lg">
+            <div class="text-sm text-slate-500 dark:text-slate-400">Page {{ page }} of {{ totalPages }}</div>
             <div class="flex items-center space-x-1">
-              <button (click)="setPage(page - 1)" [disabled]="page === 1" class="flex items-center px-3 py-1.5 border border-gray-300 rounded-md text-sm hover:bg-gray-50 disabled:opacity-50">
+              <button (click)="setPage(page - 1)" [disabled]="page === 1" class="flex items-center px-3 py-1.5 border border-slate-300 dark:border-slate-600 rounded-md text-sm hover:bg-slate-50 dark:hover:bg-slate-700 disabled:opacity-50">
                 <app-icon-chevron-left customClass="h-4 w-4 mr-1"></app-icon-chevron-left> Prev
               </button>
               <div class="hidden sm:flex space-x-1 mx-2">
-                <button *ngFor="let p of getPages()" (click)="setPage(p)" class="w-8 h-8 rounded-md border text-sm flex items-center justify-center transition-colors" [ngClass]="page === p ? 'bg-primary-600 text-white border-primary-600' : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'">
+                <button *ngFor="let p of getPages()" (click)="setPage(p)" class="w-8 h-8 rounded-md border text-sm flex items-center justify-center transition-colors" [ngClass]="page === p ? 'bg-primary-600 text-white border-primary-600' : 'bg-white dark:bg-slate-700 text-slate-700 dark:text-slate-300 border-slate-300 dark:border-slate-600 hover:bg-slate-50 dark:hover:bg-slate-600'">
                   {{ p }}
                 </button>
               </div>
-              <button (click)="setPage(page + 1)" [disabled]="page === totalPages" class="flex items-center px-3 py-1.5 border border-gray-300 rounded-md text-sm hover:bg-gray-50 disabled:opacity-50">
+              <button (click)="setPage(page + 1)" [disabled]="page === totalPages" class="flex items-center px-3 py-1.5 border border-slate-300 dark:border-slate-600 rounded-md text-sm hover:bg-slate-50 dark:hover:bg-slate-700 disabled:opacity-50">
                 Next <app-icon-chevron-right customClass="h-4 w-4 ml-1"></app-icon-chevron-right>
               </button>
             </div>
@@ -95,51 +95,51 @@
       <app-modal-title>
         {{ modalMode === 'create' ? 'Add New Notice' : modalMode === 'edit' ? 'Edit Notice' : 'Notice Details' }}
       </app-modal-title>
-      <button class="absolute top-4 right-4 text-gray-400 hover:text-gray-600" (click)="closeModal()"><app-icon-x customClass="h-5 w-5"></app-icon-x></button>
+      <button class="absolute top-4 right-4 text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300" (click)="closeModal()"><app-icon-x customClass="h-5 w-5"></app-icon-x></button>
     </app-modal-header>
 
     <app-modal-body>
       <div *ngIf="modalMode === 'view' && selectedNotice" class="space-y-6 pt-2">
         <div>
-          <h3 class="text-2xl font-bold text-gray-900 mb-3">{{ selectedNotice.title }}</h3>
-          <p class="text-gray-600 whitespace-pre-wrap leading-relaxed text-base bg-gray-50 p-4 rounded-lg border border-gray-100">{{ selectedNotice.description }}</p>
+          <h3 class="text-2xl font-bold text-slate-900 dark:text-white mb-3">{{ selectedNotice.title }}</h3>
+          <p class="text-slate-600 dark:text-slate-300 whitespace-pre-wrap leading-relaxed text-base bg-slate-50 dark:bg-slate-700/50 p-4 rounded-lg border border-slate-100 dark:border-slate-700">{{ selectedNotice.description }}</p>
         </div>
-        <div class="grid grid-cols-2 gap-4 py-4 border-t border-gray-100">
-          <div><label class="text-sm font-medium text-gray-500 block mb-1">Category</label><app-badge class="capitalize capitalize" [variant]="'info'">{{ selectedNotice.category }}</app-badge></div>
-          <div><label class="text-sm font-medium text-gray-500 block mb-1">Priority</label><app-badge class="capitalize" [variant]="selectedNotice.priority === 'high' ? 'error' : selectedNotice.priority === 'medium' ? 'warning' : 'secondary'">{{ selectedNotice.priority }}</app-badge></div>
-          <div><label class="text-sm font-medium text-gray-500 block mb-1">Created At</label><p class="text-sm text-gray-900 bg-gray-100 px-2 py-1 rounded inline-block">{{ formatDate(selectedNotice.createdAt) }}</p></div>
-          <div><label class="text-sm font-medium text-gray-500 block mb-1">Expiry Date</label><p class="text-sm text-gray-900 bg-gray-100 px-2 py-1 rounded inline-block">{{ selectedNotice.expiryDate ? formatDate(selectedNotice.expiryDate) : 'No expiry' }}</p></div>
+        <div class="grid grid-cols-2 gap-4 py-4 border-t border-slate-100 dark:border-slate-700">
+          <div><label class="text-sm font-medium text-slate-500 dark:text-slate-400 block mb-1">Category</label><app-badge class="capitalize" [variant]="'info'">{{ selectedNotice.category }}</app-badge></div>
+          <div><label class="text-sm font-medium text-slate-500 dark:text-slate-400 block mb-1">Priority</label><app-badge class="capitalize" [variant]="selectedNotice.priority === 'high' ? 'error' : selectedNotice.priority === 'medium' ? 'warning' : 'secondary'">{{ selectedNotice.priority }}</app-badge></div>
+          <div><label class="text-sm font-medium text-slate-500 dark:text-slate-400 block mb-1">Created At</label><p class="text-sm text-slate-900 dark:text-slate-100 bg-slate-100 dark:bg-slate-700 px-2 py-1 rounded inline-block">{{ formatDate(selectedNotice.createdAt) }}</p></div>
+          <div><label class="text-sm font-medium text-slate-500 dark:text-slate-400 block mb-1">Expiry Date</label><p class="text-sm text-slate-900 dark:text-slate-100 bg-slate-100 dark:bg-slate-700 px-2 py-1 rounded inline-block">{{ selectedNotice.expiryDate ? formatDate(selectedNotice.expiryDate) : 'No expiry' }}</p></div>
         </div>
       </div>
 
       <form *ngIf="modalMode !== 'view'" class="space-y-5 pt-2">
         <div>
-          <label class="block text-sm font-medium text-gray-700 mb-1">Title *</label>
-          <input type="text" [(ngModel)]="formData.title" name="title" placeholder="Enter notice title" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-primary-500 shadow-sm" required />
+          <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Title *</label>
+          <input type="text" [(ngModel)]="formData.title" name="title" placeholder="Enter notice title" class="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 rounded-md focus:ring-2 focus:ring-primary-500 shadow-sm" required />
         </div>
         <div>
-          <label class="block text-sm font-medium text-gray-700 mb-1">Description *</label>
-          <textarea rows="5" [(ngModel)]="formData.description" name="description" placeholder="Enter full notice description" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-primary-500 shadow-sm resize-none" required></textarea>
+          <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Description *</label>
+          <textarea rows="5" [(ngModel)]="formData.description" name="description" placeholder="Enter full notice description" class="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 rounded-md focus:ring-2 focus:ring-primary-500 shadow-sm resize-none" required></textarea>
         </div>
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">Category</label>
-            <select [(ngModel)]="formData.category" name="category" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-primary-500 shadow-sm">
+            <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Category</label>
+            <select [(ngModel)]="formData.category" name="category" class="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 rounded-md focus:ring-2 focus:ring-primary-500 shadow-sm">
               <option value="general">General</option><option value="maintenance">Maintenance</option>
               <option value="security">Security</option><option value="event">Event</option>
               <option value="payment">Payment</option><option value="other">Other</option>
             </select>
           </div>
           <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">Priority</label>
-            <select [(ngModel)]="formData.priority" name="priority" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-primary-500 shadow-sm">
+            <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Priority</label>
+            <select [(ngModel)]="formData.priority" name="priority" class="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 rounded-md focus:ring-2 focus:ring-primary-500 shadow-sm">
               <option value="low">Low</option><option value="medium">Medium</option><option value="high">High</option>
             </select>
           </div>
         </div>
         <div>
-          <label class="block text-sm font-medium text-gray-700 mb-1">Expiry Date (Optional)</label>
-          <input type="date" [(ngModel)]="formData.expiryDate" name="expiryDate" [min]="currentDate" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-primary-500 shadow-sm" />
+          <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Expiry Date (Optional)</label>
+          <input type="date" [(ngModel)]="formData.expiryDate" name="expiryDate" [min]="currentDate" class="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 rounded-md focus:ring-2 focus:ring-primary-500 shadow-sm" />
         </div>
       </form>
     </app-modal-body>
@@ -148,7 +148,7 @@
         <div *ngIf="actionLoading" class="animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full mr-2"></div>
         {{ actionLoading ? 'Processing...' : modalMode === 'create' ? 'Create Notice' : 'Update Notice' }}
       </button>
-      <button (click)="closeModal()" class="px-4 py-2 border border-gray-300 text-gray-700 hover:bg-gray-50 rounded-md font-medium">
+      <button (click)="closeModal()" class="px-4 py-2 border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-600 rounded-md font-medium">
         {{ modalMode === 'view' ? 'Close' : 'Cancel' }}
       </button>
     </app-modal-footer>

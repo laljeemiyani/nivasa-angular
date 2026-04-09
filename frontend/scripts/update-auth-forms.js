@@ -1,0 +1,144 @@
+const fs = require('fs');
+const path = require('path');
+
+const registerPath = path.join(__dirname, '../src/app/pages/auth/register/register.component.html');
+const loginPath = path.join(__dirname, '../src/app/pages/auth/login/login.component.ts');
+const authLayoutPath = path.join(__dirname, '../src/app/layouts/auth-layout/auth-layout.component.ts');
+
+const registerHTML = `<div class="bg-white p-6 sm:p-10 rounded-2xl shadow-xl shadow-slate-200/40 border border-slate-100 w-full mx-auto">
+  <div class="space-y-2 mb-6 text-center">
+    <h1 class="text-3xl font-display font-bold text-slate-900 tracking-tight">Create your account</h1>
+    <p class="text-slate-500 text-sm font-medium">Join Nivasa to access your community dashboard</p>
+  </div>
+
+  <div *ngIf="errorMessage" class="mb-5 p-3 bg-red-50 border border-red-100 rounded-xl flex items-start space-x-3">
+    <div class="w-5 h-5 text-red-500 mt-0.5">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+        <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd" />
+      </svg>
+    </div>
+    <p class="text-red-600 text-sm font-medium">{{ errorMessage }}</p>
+  </div>
+  
+  <div *ngIf="success" class="mb-5 p-3 bg-green-50 border border-green-100 rounded-xl flex items-start space-x-3">
+    <div class="w-5 h-5 text-green-500 mt-0.5">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.857-9.809a.75.75 0 00-1.214-.882l-3.483 4.79-1.88-1.88a.75.75 0 10-1.06 1.061l2.5 2.5a.75.75 0 001.137-.089l4-5.5z" clip-rule="evenodd" />
+      </svg>
+    </div>
+    <p class="text-green-700 text-sm font-medium">Registration successful! Redirecting to login...</p>
+  </div>
+
+  <form *ngIf="!success" [formGroup]="registerForm" (ngSubmit)="onSubmit()" class="space-y-6">
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-x-5 gap-y-4">
+      
+      <!-- Full Name -->
+      <div class="space-y-1.5 md:col-span-1">
+        <label for="fullName" class="block text-xs font-bold text-slate-700 uppercase tracking-wide">Full Name *</label>
+        <input id="fullName" formControlName="fullName" placeholder="John Doe" class="block w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-primary-500 transition-all font-medium placeholder:text-slate-400" />
+      </div>
+
+      <!-- Email -->
+      <div class="space-y-1.5 md:col-span-1">
+        <label for="email" class="block text-xs font-bold text-slate-700 uppercase tracking-wide">Email Address *</label>
+        <input id="email" type="email" formControlName="email" placeholder="name@example.com" class="block w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-primary-500 transition-all font-medium placeholder:text-slate-400" />
+      </div>
+
+      <!-- Password -->
+      <div class="space-y-1.5 md:col-span-1">
+        <label for="password" class="block text-xs font-bold text-slate-700 uppercase tracking-wide">Password *</label>
+        <div class="relative">
+          <input id="password" [type]="showPassword ? 'text' : 'password'" formControlName="password" placeholder="••••••••" class="block w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-primary-500 transition-all font-medium placeholder:text-slate-400" />
+          <button type="button" (click)="showPassword = !showPassword" class="absolute inset-y-0 right-0 pr-3.5 flex items-center text-slate-400 hover:text-primary-600 focus:outline-none">
+             <svg *ngIf="showPassword" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M3.98 8.223A10.477 10.477 0 001.934 12C3.226 16.338 7.244 19.5 12 19.5c.993 0 1.953-.138 2.863-.395M6.228 6.228A10.45 10.45 0 0112 4.5c4.756 0 8.773 3.162 10.065 7.498a10.523 10.523 0 01-4.293 5.774M6.228 6.228L3 3m3.228 3.228l3.65 3.65m7.894 7.894L21 21m-3.228-3.228l-3.65-3.65m0 0a3 3 0 10-4.243-4.243m4.242 4.242L9.88 9.88" /></svg>
+             <svg *ngIf="!showPassword" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178z" /><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
+          </button>
+        </div>
+      </div>
+
+      <!-- Confirm -->
+      <div class="space-y-1.5 md:col-span-1">
+        <label for="confirmPassword" class="block text-xs font-bold text-slate-700 uppercase tracking-wide">Confirm *</label>
+        <div class="relative">
+          <input id="confirmPassword" [type]="showConfirmPassword ? 'text' : 'password'" formControlName="confirmPassword" placeholder="••••••••" class="block w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-primary-500 transition-all font-medium placeholder:text-slate-400" />
+          <button type="button" (click)="showConfirmPassword = !showConfirmPassword" class="absolute inset-y-0 right-0 pr-3.5 flex items-center text-slate-400 hover:text-primary-600 focus:outline-none">
+             <svg *ngIf="showConfirmPassword" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M3.98 8.223A10.477 10.477 0 001.934 12C3.226 16.338 7.244 19.5 12 19.5c.993 0 1.953-.138 2.863-.395M6.228 6.228A10.45 10.45 0 0112 4.5c4.756 0 8.773 3.162 10.065 7.498a10.523 10.523 0 01-4.293 5.774M6.228 6.228L3 3m3.228 3.228l3.65 3.65m7.894 7.894L21 21m-3.228-3.228l-3.65-3.65m0 0a3 3 0 10-4.243-4.243m4.242 4.242L9.88 9.88" /></svg>
+             <svg *ngIf="!showConfirmPassword" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178z" /><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
+          </button>
+        </div>
+      </div>
+      
+      <div class="md:col-span-2 my-2 border-t border-slate-100/60"></div>
+
+      <!-- Phone -->
+      <div class="space-y-1.5 md:col-span-1">
+        <label for="phoneNumber" class="block text-xs font-bold text-slate-700 uppercase tracking-wide">Phone Number *</label>
+        <input id="phoneNumber" formControlName="phoneNumber" placeholder="9876543210" maxlength="10" class="block w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-primary-500 transition-all font-medium placeholder:text-slate-400" />
+      </div>
+
+      <!-- Type -->
+      <div class="space-y-1.5 md:col-span-1">
+        <label for="residentType" class="block text-xs font-bold text-slate-700 uppercase tracking-wide">Resident Type *</label>
+        <select id="residentType" formControlName="residentType" class="block w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-primary-500 transition-all font-medium">
+          <option value="Owner">Owner</option>
+          <option value="Tenant">Tenant</option>
+        </select>
+      </div>
+
+      <!-- Wing -->
+      <div class="space-y-1.5 md:col-span-1">
+         <label for="wing" class="block text-xs font-bold text-slate-700 uppercase tracking-wide">Wing *</label>
+         <select id="wing" formControlName="wing" class="block w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-primary-500 transition-all font-medium">
+            <option value="">Select (A-F)</option>
+            <option value="A">A</option>
+            <option value="B">B</option>
+            <option value="C">C</option>
+            <option value="D">D</option>
+            <option value="E">E</option>
+            <option value="F">F</option>
+          </select>
+      </div>
+
+      <!-- Flat -->
+      <div class="space-y-1.5 md:col-span-1">
+        <label for="flatNumber" class="block text-xs font-bold text-slate-700 uppercase tracking-wide">Flat Number *</label>
+        <input id="flatNumber" formControlName="flatNumber" placeholder="e.g. 101" maxlength="4" class="block w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-primary-500 transition-all font-medium placeholder:text-slate-400" />
+      </div>
+    </div>
+
+    <button type="submit" [disabled]="registerForm.invalid || loading"
+      class="w-full relative group overflow-hidden mt-4 bg-primary-600 text-white py-3.5 px-4 rounded-xl font-bold tracking-wide hover:bg-primary-700 focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 disabled:opacity-60 disabled:cursor-not-allowed transition-all duration-200 shadow-lg shadow-primary-500/30 text-sm">
+      <div *ngIf="loading" class="flex items-center justify-center space-x-2">
+        <div class="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+        <span>Creating account...</span>
+      </div>
+      <div *ngIf="!loading" class="flex items-center justify-center space-x-2">
+        <span>Create Account</span>
+      </div>
+    </button>
+  </form>
+
+  <div class="text-center pt-6">
+    <p class="text-sm font-medium text-slate-600">
+      Already have an account?
+      <a routerLink="/login" class="font-bold text-primary-600 hover:text-primary-700 transition-colors ml-1">
+        Sign in
+      </a>
+    </p>
+  </div>
+</div>`;
+
+// Replace indigo with primary in auth layout for perfect brand cohesion
+let authLayout = fs.readFileSync(authLayoutPath, 'utf8');
+authLayout = authLayout.replace(/indigo/g, 'primary');
+fs.writeFileSync(authLayoutPath, authLayout);
+
+// Update login margins and colors
+let loginCode = fs.readFileSync(loginPath, 'utf8');
+loginCode = loginCode.replace(/<div class="bg-white p-8 sm:p-10 rounded-\[2rem\] shadow-card border border-slate-100">/, '<div class="bg-white p-8 sm:p-10 rounded-2xl shadow-xl shadow-slate-200/40 border border-slate-100 max-w-md mx-auto">');
+loginCode = loginCode.replace(/indigo/g, 'primary');
+fs.writeFileSync(loginPath, loginCode);
+
+// Rewrite register html completely
+fs.writeFileSync(registerPath, registerHTML);
+console.log('All auth forms and layouts updated perfectly.');

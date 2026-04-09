@@ -2,7 +2,10 @@ import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { HttpClient } from '@angular/common/http';
+import { ActivatedRoute } from '@angular/router';
 import { environment } from '../../../../environments/environment';
+import { ToastService } from '../../../core/services/toast.service';
+import { ConfirmDialogService } from '../../../core/services/confirm-dialog.service';
 
 import {
   CardComponent,
@@ -74,9 +77,18 @@ export class AdminComplaintsComponent implements OnInit {
 
   private apiUrl = environment.apiUrl;
 
-  constructor(private http: HttpClient) {}
+  constructor(
+    private http: HttpClient,
+    private toastService: ToastService,
+    private confirmDialogService: ConfirmDialogService,
+    private route: ActivatedRoute,
+  ) {}
 
   ngOnInit() {
+    const statusFromQuery = this.route.snapshot.queryParamMap.get('status');
+    if (statusFromQuery) {
+      this.statusFilter = statusFromQuery.toLowerCase();
+    }
     this.fetchComplaints();
   }
 
@@ -138,7 +150,7 @@ export class AdminComplaintsComponent implements OnInit {
       ['in_progress', 'resolved'].includes(this.actionStatus) &&
       !this.adminResponse.trim()
     ) {
-      alert('Please provide a response for the resident');
+      this.toastService.warning('Validation Error', 'Please provide a response for the resident');
       return;
     }
 
@@ -154,30 +166,33 @@ export class AdminComplaintsComponent implements OnInit {
       )
       .subscribe({
         next: () => {
+          this.toastService.success('Status Updated', 'Complaint status has been updated successfully.');
           this.fetchComplaints();
           this.closeModal();
           this.actionLoading = false;
         },
         error: (error) => {
           console.error('Failed to update complaint status:', error);
-          alert('Failed to update complaint status');
+          this.toastService.error('Error', error.error?.message || 'Failed to update complaint status');
           this.actionLoading = false;
         },
       });
   }
 
-  handleDelete(complaintId: string) {
-    if (!confirm('Are you sure you want to delete this complaint?')) return;
+  async handleDelete(complaintId: string) {
+    const confirmed = await this.confirmDialogService.confirmDelete('this complaint');
+    if (!confirmed) return;
 
     this.http
       .delete(`${this.apiUrl}/admin/complaints/${complaintId}`)
       .subscribe({
         next: () => {
+          this.toastService.success('Complaint Deleted', 'The complaint has been deleted successfully.');
           this.fetchComplaints();
         },
         error: (error) => {
           console.error('Failed to delete complaint:', error);
-          alert('Failed to delete complaint');
+          this.toastService.error('Error', error.error?.message || 'Failed to delete complaint');
         },
       });
   }

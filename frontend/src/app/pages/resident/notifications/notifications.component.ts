@@ -1,24 +1,17 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { NotificationService } from '../../../core/services/notification.service';
+import { ToastService } from '../../../core/services/toast.service';
+import { ConfirmDialogService } from '../../../core/services/confirm-dialog.service';
 import { Router } from '@angular/router';
-import { Observable } from 'rxjs';
-import { take } from 'rxjs/operators';
-import { environment } from '../../../../environments/environment';
+import { interval, Subscription } from 'rxjs';
 
-import {
-  CardComponent,
-  CardHeaderComponent,
-  CardTitleComponent,
-  CardDescriptionComponent,
-  CardContentComponent,
-} from '../../../shared/components/ui/card/card.component';
 import {
   IconCheckComponent,
   IconTrashComponent,
-  IconAlertCircleComponent,
   IconChevronLeftComponent,
   IconChevronRightComponent,
+  IconAlertCircleComponent
 } from '../../../shared/components/ui/icons/icons.component';
 
 @Component({
@@ -26,50 +19,69 @@ import {
   standalone: true,
   imports: [
     CommonModule,
-    CardComponent,
-    CardHeaderComponent,
-    CardTitleComponent,
-    CardDescriptionComponent,
-    CardContentComponent,
     IconCheckComponent,
     IconTrashComponent,
-    IconAlertCircleComponent,
     IconChevronLeftComponent,
     IconChevronRightComponent,
+    IconAlertCircleComponent
   ],
   templateUrl: './notifications.component.html',
 })
-export class ResidentNotificationsComponent implements OnInit {
-  notifications$!: Observable<any[]>;
+export class ResidentNotificationsComponent implements OnInit, OnDestroy {
+  notifications: any[] = [];
   loading = true;
   page = 1;
   totalPages = 1;
   totalItems = 0;
+  private pollingSub?: Subscription;
 
   constructor(
     private notificationService: NotificationService,
-    private router: Router,
-  ) {}
+    private toastService: ToastService,
+    private confirmDialogService: ConfirmDialogService,
+    private router: Router
+  ) { }
 
   ngOnInit() {
-    this.notifications$ = this.notificationService.notifications$;
     this.fetchNotifications();
+    // Poll every 30s so approval/rejection updates appear without full page refresh
+    this.pollingSub = interval(30000).subscribe(() => this.refreshSilent());
+  }
+
+  ngOnDestroy() {
+    this.pollingSub?.unsubscribe();
   }
 
   fetchNotifications() {
     this.loading = true;
-    let params: any = { page: this.page.toString(), limit: '10' };
+    this.doFetch(true);
+  }
 
-    this.notificationService.fetchMyNotifications(params);
+  /** Background refresh without loading spinner (for polling). */
+  private refreshSilent() {
+    this.doFetch(false);
+  }
 
-    // Give the subject a moment to emit and smooth out the UI
-    setTimeout(() => {
-      this.loading = false;
-    }, 300);
+  private doFetch(showLoading: boolean) {
+    if (showLoading) this.loading = true;
+    const params: any = { page: this.page.toString(), limit: '10' };
+    this.notificationService.getNotifications(params).subscribe({
+      next: (response) => {
+        this.notifications = response.data?.notifications || response.data?.data?.notifications || [];
+        const pagination = response.data?.pagination || response.data?.data?.pagination || { totalPages: 1, totalItems: 0 };
+        this.totalPages = pagination.totalPages;
+        this.totalItems = pagination.totalItems;
+        this.loading = false;
+      },
+      error: (error) => {
+        console.error('Failed to fetch notifications:', error);
+        this.loading = false;
+      }
+    });
   }
 
   setPage(p: number) {
-    if (p < 1) return;
+    if (p < 1 || p > this.totalPages) return;
     this.page = p;
     this.fetchNotifications();
   }
@@ -89,30 +101,39 @@ export class ResidentNotificationsComponent implements OnInit {
     if (event) {
       event.stopPropagation();
     }
-    this.notificationService
-      .markAsRead(id)
-      .pipe(take(1))
-      .subscribe({
-        next: () => {
-          this.fetchNotifications();
-        },
-        error: (error) => {
-          console.error('Error marking notification as read:', error);
-        },
-      });
+    this.notificationService.markAsRead(id).subscribe({
+      next: () => {
+        this.notifications = this.notifications.map((n) =>
+          n._id === id ? { ...n, isRead: true } : n
+        );
+      },
+      error: (error) => {
+        console.error('Error marking notification as read:', error);
+      },
+    });
   }
 
-  handleDeleteNotification(id: string, event?: MouseEvent) {
+  async handleDeleteNotification(id: string, event?: MouseEvent) {
     if (event) {
       event.stopPropagation();
     }
-    if (!confirm('Are you sure you want to delete this notification?')) return;
+    const confirmed = await this.confirmDialogService.confirmDelete('this notification');
+    if (!confirmed) return;
+    
     this.notificationService.deleteNotification(id).subscribe({
       next: () => {
-        this.fetchNotifications();
+        this.toastService.success('Notification Deleted', 'The notification has been deleted successfully.');
+        this.notifications = this.notifications.filter((n) => n._id !== id);
+        this.totalItems = Math.max(0, this.totalItems - 1);
+        if (this.notifications.length === 0 && this.page > 1) {
+          this.setPage(this.page - 1);
+        } else {
+          this.fetchNotifications();
+        }
       },
       error: (error) => {
         console.error('Error deleting notification:', error);
+        this.toastService.error('Error', 'Failed to delete notification');
       },
     });
   }
@@ -120,10 +141,15 @@ export class ResidentNotificationsComponent implements OnInit {
   handleMarkAllAsRead() {
     this.notificationService.markAllAsRead().subscribe({
       next: () => {
-        this.fetchNotifications();
+        this.toastService.success('Success', 'All notifications marked as read.');
+        this.notifications = this.notifications.map((n) => ({
+          ...n,
+          isRead: true,
+        }));
       },
       error: (error) => {
         console.error('Error marking all notifications as read:', error);
+        this.toastService.error('Error', 'Failed to mark all notifications as read');
       },
     });
   }
@@ -131,13 +157,15 @@ export class ResidentNotificationsComponent implements OnInit {
   getNotificationTypeClass(type: string) {
     switch (type) {
       case 'success':
-        return 'bg-green-50 border-green-200';
+        return 'bg-green-500/10 border-green-500/30';
       case 'warning':
-        return 'bg-yellow-50 border-yellow-200';
+        return 'bg-amber-500/10 border-amber-500/30';
       case 'error':
-        return 'bg-red-50 border-red-200';
+        return 'bg-red-500/10 border-red-500/30';
+      case 'info':
+        return 'bg-blue-500/10 border-blue-500/30';
       default:
-        return 'bg-blue-50 border-blue-200';
+        return 'bg-slate-100 dark:bg-slate-800 border-slate-200 dark:border-slate-700';
     }
   }
 
@@ -149,8 +177,10 @@ export class ResidentNotificationsComponent implements OnInit {
         return 'text-yellow-500';
       case 'error':
         return 'text-red-500';
-      default:
+      case 'info':
         return 'text-blue-500';
+      default:
+        return 'text-slate-500';
     }
   }
 
@@ -176,58 +206,5 @@ export class ResidentNotificationsComponent implements OnInit {
       hour: '2-digit',
       minute: '2-digit',
     });
-  }
-
-  handleNotificationClick(notification: any) {
-    // 1. Mark as read if it is unread
-    if (!notification.isRead) {
-      // Optimistically update the UI to feel snappy
-      notification.isRead = true;
-      this.notificationService
-        .markAsRead(notification._id)
-        .pipe(take(1))
-        .subscribe({
-          next: () => {
-            // If we wanted to refresh completely we could call fetchNotifications()
-          },
-          error: (error) => {
-            console.error(
-              'Failed to mark notification as read on click:',
-              error,
-            );
-            // Revert optimistic update on failure (optional, but good UX)
-            notification.isRead = false;
-          },
-        });
-    }
-
-    // Navigate safely
-    this.routeToNotification(notification);
-  }
-
-  private routeToNotification(notification: any) {
-    if (!notification.routingType) return;
-
-    switch (notification.routingType) {
-      case 'COMPLAINT_UPDATE':
-        if (notification.referenceId) {
-          this.router.navigate([
-            '/resident/complaints/view',
-            notification.referenceId,
-          ]);
-        } else {
-          // Fallback if no reference attached
-          this.router.navigate(['/resident/complaints']);
-        }
-        break;
-      case 'PARKING_REQUEST':
-        this.router.navigate(['/resident/vehicles']);
-        break;
-      case 'BROADCAST':
-      case 'SYSTEM':
-      default:
-        // No action required
-        break;
-    }
   }
 }

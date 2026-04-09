@@ -5,13 +5,24 @@ import { AuthGuard } from './core/guards/auth.guard';
 import { AuthLayoutComponent } from './layouts/auth-layout/auth-layout.component';
 import { AdminLayoutComponent } from './layouts/admin-layout/admin-layout.component';
 import { ResidentLayoutComponent } from './layouts/resident-layout/resident-layout.component';
+import { LandingLayoutComponent } from './layouts/landing-layout/landing-layout.component';
 
+// Default: show Landing first. Only authenticated users reach admin/resident (AuthGuard).
 // Features
 export const routes: Routes = [
   {
     path: '',
-    redirectTo: '/login', // User will be redirected by Auth service/guard if already logged in. Actually, in login component, we navigate them out.
-    pathMatch: 'full',
+    component: LandingLayoutComponent,
+    children: [
+      {
+        path: '',
+        pathMatch: 'full',
+        loadComponent: () =>
+          import('./pages/landing/landing.component').then(
+            (m) => m.LandingComponent,
+          ),
+      },
+    ],
   },
   {
     path: '',
@@ -23,6 +34,7 @@ export const routes: Routes = [
           import('./pages/auth/login/login.component').then(
             (m) => m.LoginComponent,
           ),
+        data: { animation: 'auth' }
       },
       {
         path: 'register',
@@ -30,6 +42,7 @@ export const routes: Routes = [
           import('./pages/auth/register/register.component').then(
             (m) => m.RegisterComponent,
           ),
+        data: { animation: 'auth' }
       },
     ],
   },
@@ -76,7 +89,7 @@ export const routes: Routes = [
           ),
       },
       {
-        path: 'issues', // The request used "Issues", but the component is Complaints. I'll use complaints in the URL as well to match React, but the user said "Issues". React URL was /admin/complaints actually? Let's check React's App.jsx. Let's use 'complaints'.
+        path: 'issues',
         loadComponent: () =>
           import('./pages/admin/complaints/complaints.component').then(
             (m) => m.AdminComplaintsComponent,
@@ -84,7 +97,7 @@ export const routes: Routes = [
       },
       {
         path: 'complaints',
-        redirectTo: 'issues', // Just in case
+        redirectTo: 'issues',
       },
       {
         path: 'notifications',
@@ -101,10 +114,10 @@ export const routes: Routes = [
           ),
       },
       {
-        path: 'client-profile',
+        path: 'settings',
         loadComponent: () =>
-          import('./pages/admin/client-profile/client-profile.component').then(
-            (m) => m.AdminClientProfileComponent,
+          import('./pages/admin/settings/settings.component').then(
+            (m) => m.SettingsComponent,
           ),
       },
     ],
@@ -173,10 +186,10 @@ export const routes: Routes = [
   },
   {
     path: 'unauthorized',
-    redirectTo: '/login',
+    redirectTo: '/',
   },
   {
     path: '**',
-    redirectTo: '/login',
+    redirectTo: '/',
   },
 ];
